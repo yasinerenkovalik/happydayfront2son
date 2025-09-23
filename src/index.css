@@ -1,0 +1,77 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Özel Gradient Arka Planları */
+@layer utilities {
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, #F8BBD0 0%, #F5E6CC 100%);
+  }
+  
+  .bg-gradient-secondary {
+    background: linear-gradient(135deg, #F5E6CC 0%, #D4AF37 100%);
+  }
+  
+  .bg-gradient-accent {
+    background: linear-gradient(135deg, #D4AF37 0%, #B8860B 100%);
+  }
+  
+  .bg-gradient-soft {
+    background: linear-gradient(135deg, #FCE4EC 0%, #FDF6E3 100%);
+  }
+  
+  .bg-gradient-hero {
+    background: linear-gradient(135deg, #F8BBD0 0%, #F5E6CC 50%, #D4AF37 100%);
+  }
+}
+
+/* Özel Gölge Efektleri */
+@layer utilities {
+  .shadow-primary {
+    box-shadow: 0 4px 14px 0 rgba(248, 187, 208, 0.25);
+  }
+  
+  .shadow-secondary {
+    box-shadow: 0 4px 14px 0 rgba(245, 230, 204, 0.25);
+  }
+  
+  .shadow-accent {
+    box-shadow: 0 4px 14px 0 rgba(212, 175, 55, 0.25);
+  }
+  
+  .shadow-soft {
+    box-shadow: 0 2px 8px 0 rgba(248, 187, 208, 0.15);
+  }
+}
+
+/* Hover Efektleri */
+@layer utilities {
+  .hover-lift {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px 0 rgba(248, 187, 208, 0.3);
+  }
+}
+
+.slider-container {
+  overflow: hidden;
+}
+
+.slider {
+  display: flex;
+  transition: transform 0.5s ease-in-out;
+}
+
+.slide {
+  min-width: 100%;
+  box-sizing: border-box;
+}
