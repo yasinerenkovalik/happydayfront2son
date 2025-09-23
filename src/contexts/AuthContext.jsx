@@ -22,58 +22,90 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem('user')
     
     if (savedToken && savedUser) {
+      const userData = JSON.parse(savedUser)
+      // Token'ı user objesine de ekle
+      userData.token = savedToken
+      
       setToken(savedToken)
-      setUser(JSON.parse(savedUser))
+      setUser(userData)
     }
     
     setLoading(false)
   }, [])
 
-  const login = async (email, password) => {
+  const login = async (tokenOrEmail, passwordOrRole) => {
     try {
-      const response = await fetch(getApiUrl('/Company/login'), {
-        method: 'POST',
-        headers: {
-          'Accept': 'text/plain',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error('Giriş başarısız')
-      }
-
-      const result = await response.json()
-      
-      if (result.isSuccess) {
-        const { token, isEmailConfirmed } = result.data
-        
-        // Token'ı decode ederek kullanıcı bilgilerini al
-        const tokenPayload = JSON.parse(atob(token.split('.')[1]))
+      // Eğer ikinci parametre 'admin' ise, bu admin girişi
+      if (passwordOrRole === 'admin') {
+        // Admin girişi - token direkt verildi
+        const adminToken = tokenOrEmail
         
         const userData = {
-          id: tokenPayload.nameid,
-          role: tokenPayload.role,
-          companyId: tokenPayload.CompanyId,
-          email,
-          isEmailConfirmed
+          id: 'admin',
+          role: 'admin',
+          email: 'admin@mutlugunum.com',
+          isEmailConfirmed: true,
+          token: adminToken  // Token'ı user objesine de ekle
         }
 
         // State'i güncelle
-        setToken(token)
+        setToken(adminToken)
         setUser(userData)
         
         // localStorage'a kaydet
-        localStorage.setItem('token', token)
+        localStorage.setItem('token', adminToken)
         localStorage.setItem('user', JSON.stringify(userData))
         
         return { success: true, user: userData }
       } else {
-        throw new Error(result.message || 'Giriş başarısız')
+        // Normal şirket girişi
+        const email = tokenOrEmail
+        const password = passwordOrRole
+        
+        const response = await fetch(getApiUrl('/Company/login'), {
+          method: 'POST',
+          headers: {
+            'Accept': 'text/plain',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email,
+            password
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error('Giriş başarısız')
+        }
+
+        const result = await response.json()
+        
+        if (result.isSuccess) {
+          const { token, isEmailConfirmed } = result.data
+          
+          // Token'ı decode ederek kullanıcı bilgilerini al
+          const tokenPayload = JSON.parse(atob(token.split('.')[1]))
+          
+          const userData = {
+            id: tokenPayload.nameid,
+            role: 'company',
+            companyId: tokenPayload.CompanyId,
+            email,
+            isEmailConfirmed
+          }
+
+          // State'i güncelle
+          setToken(token)
+          setUser(userData)
+          
+          // localStorage'a kaydet
+          localStorage.setItem('token', token)
+          localStorage.setItem('user', JSON.stringify(userData))
+          
+          return { success: true, user: userData, isEmailConfirmed }
+        } else {
+          throw new Error(result.message || 'Giriş başarısız')
+        }
       }
     } catch (error) {
       console.error('Login error:', error)

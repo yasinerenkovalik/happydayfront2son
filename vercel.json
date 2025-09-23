@@ -5,8 +5,8 @@
       "destination": "http://193.111.77.142/api/$1"
     },
     {
-      "source": "/api-static/(.*)",
-      "destination": "http://193.111.77.142/$1"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
@@ -26,20 +26,6 @@
           "value": "Content-Type, Authorization, Accept"
         }
       ]
-    },
-    {
-      "source": "/api-static/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        }
-      ]
     }
-  ],
-  "functions": {
-    "api/test.js": {
-      "maxDuration": 10
-    }
-  }
+  ]
 }

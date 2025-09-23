@@ -29,6 +29,13 @@ const Login = () => {
     const result = await login(formData.email, formData.password)
 
     if (result.success) {
+      // Email doğrulama kontrolü
+      if (result.user && result.user.isEmailConfirmed === false) {
+        setError('Email adresinizi doğrulamanız gerekiyor. Lütfen email kutunuzu kontrol edin ve doğrulama linkine tıklayın.')
+        setLoading(false)
+        return
+      }
+      
       // Başarılı giriş - dashboard'a yönlendir
       navigate('/dashboard')
     } else {
@@ -104,9 +111,9 @@ const Login = () => {
             </div>
 
             <div className="text-sm">
-              <a href="#" className="font-medium text-primary hover:text-primary/80">
+              <Link to="/forgot-password" className="font-medium text-primary hover:text-primary/80">
                 Şifrenizi mi unuttunuz?
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -127,8 +134,22 @@ const Login = () => {
             </button>
           </div>
 
-          <div className="text-center">
-        
+          <div className="text-center space-y-2">
+            <p className="text-sm text-subtle-light dark:text-subtle-dark">
+              Hesabınız yok mu?{' '}
+              <Link to="/register" className="text-primary hover:text-primary/80 font-medium">
+                Kayıt olun
+              </Link>
+            </p>
+            <div className="border-t border-border-light dark:border-border-dark pt-4">
+              <Link
+                to="/admin/login"
+                className="inline-flex items-center gap-2 text-sm text-red-600 hover:text-red-700 font-medium transition-colors"
+              >
+                <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
+                Admin Girişi
+              </Link>
+            </div>
           </div>
         </form>
       </div>

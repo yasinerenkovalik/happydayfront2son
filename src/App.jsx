@@ -9,8 +9,16 @@ import Contact from './pages/Contact'
 import Blog from './pages/Blog'
 import Help from './pages/Help'
 import Login from './pages/Login'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
+import CompanyRegister from './pages/CompanyRegister'
+import EmailConfirmation from './pages/EmailConfirmation'
+import AdminLogin from './pages/AdminLogin'
+import AdminDashboard from './pages/AdminDashboard'
 import Dashboard from './pages/Dashboard'
 import OrganizationDetail from './pages/OrganizationDetail'
+import NotFound from './pages/NotFound'
+import AdminProtectedRoute from './components/AdminProtectedRoute'
 
 function App() {
   return (
@@ -26,6 +34,19 @@ function App() {
             <Route path="/blog" element={<Blog />} />
             <Route path="/help" element={<Help />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/auth/reset-password" element={<ResetPassword />} />
+            <Route path="/auth/confirm-email/auth/confirm-email" element={<EmailConfirmation />} />
+            <Route path="/company/register" element={<CompanyRegister />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route
+              path="/admin/dashboard"
+              element={
+                <AdminProtectedRoute>
+                  <AdminDashboard />
+                </AdminProtectedRoute>
+              }
+            />
             <Route
               path="/dashboard"
               element={
@@ -34,6 +55,9 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            
+            {/* 404 - Catch all unmatched routes */}
+            <Route path="*" element={<NotFound />} />
 
           </Routes>
         </Layout>

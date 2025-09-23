@@ -1,0 +1,27 @@
+{
+  "name": "MutluGünüm - Profesyonel Organizasyon Hizmetleri",
+  "short_name": "MutluGünüm",
+  "description": "Düğün, doğum günü, kurumsal etkinlik organizasyonları. Profesyonel hizmet, uygun fiyat.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#8B5CF6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/images/logos/logo-Photoroom.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/images/logos/logo-Photoroom.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "categories": ["business", "lifestyle", "entertainment"],
+  "lang": "tr",
+  "dir": "ltr"
+}

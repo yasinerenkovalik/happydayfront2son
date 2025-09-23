@@ -6,7 +6,7 @@ import { getImageUrl } from '../utils/api'
 
 const Services = () => {
   const [searchParams] = useSearchParams()
-  
+
   const [filters, setFilters] = useState({
     cityId: '',
     districtId: '',
@@ -57,15 +57,15 @@ const Services = () => {
         ...prev,
         [filterType]: value
       }
-      
+
       // Şehir değiştiğinde ilçeyi sıfırla
       if (filterType === 'cityId') {
         newFilters.districtId = ''
       }
-      
+
       return newFilters
     })
-    
+
     // Filtre değiştiğinde sayfa 1'e dön (sadece debounced filters değiştiğinde)
     if (filterType !== 'maxPrice') {
       setCurrentPage(1)
@@ -119,8 +119,8 @@ const Services = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-red-500 mb-4">Hata: {error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
           >
             Tekrar Dene
@@ -150,7 +150,7 @@ const Services = () => {
       <section className="py-16 sm:py-24 bg-background-light/50 dark:bg-background-dark/50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row gap-12">
-            
+
             {/* Sidebar Filters */}
             <aside className="w-full lg:w-1/4">
               <div className="sticky top-24">
@@ -158,7 +158,7 @@ const Services = () => {
                   <h2 className="text-2xl font-bold text-content-light dark:text-content-dark mb-6">
                     Filtreler
                   </h2>
-                  
+
                   <form onSubmit={handleFilterSubmit} className="space-y-6">
                     {/* City Filter */}
                     <div>
@@ -268,13 +268,13 @@ const Services = () => {
                     </div>
 
                     <div className="flex gap-3">
-                      <button 
+                      <button
                         type="submit"
                         className="flex-1 px-4 py-3 text-sm font-bold text-white bg-primary rounded-full hover:bg-primary/90 transition-colors shadow-lg"
                       >
                         Filtrele
                       </button>
-                      <button 
+                      <button
                         type="button"
                         onClick={clearFilters}
                         className="px-4 py-3 text-sm font-bold text-primary bg-primary/10 rounded-full hover:bg-primary/20 transition-colors"
@@ -294,7 +294,7 @@ const Services = () => {
                 <p className="text-subtle-light dark:text-subtle-dark mb-4 sm:mb-0">
                   {totalCount} organizasyon bulundu
                 </p>
-                
+
                 <div className="flex items-center gap-4">
                   <label htmlFor="sort" className="text-sm font-medium text-content-light dark:text-content-dark">
                     Sırala:
@@ -328,7 +328,7 @@ const Services = () => {
                         }}
                       />
                     </div>
-                    
+
                     <div className="p-6 flex flex-col flex-grow">
                       <h2 className="text-xl font-bold text-content-light dark:text-content-dark">
                         {org.title || 'Başlık Yok'}
@@ -345,11 +345,11 @@ const Services = () => {
                           </div>
                         )}
                       </div>
-                      
+
                       <p className="mt-4 text-content-light dark:text-content-dark flex-grow text-sm leading-relaxed">
                         {truncateDescription(org.description)}
                       </p>
-                      
+
                       <div className="mt-4 flex flex-wrap gap-2">
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
                           {org.duration || 'Süre belirtilmemiş'}
@@ -360,7 +360,7 @@ const Services = () => {
                           </span>
                         )}
                       </div>
-                      
+
                       <div className="mt-6 flex items-center justify-between">
                         <span className="text-lg font-bold text-primary">
                           {formatPrice(org.price)}
@@ -390,7 +390,7 @@ const Services = () => {
                   >
                     <span className="material-symbols-outlined">chevron_left</span>
                   </button>
-                  
+
                   <div className="flex items-center gap-2 mx-4">
                     {Array.from({ length: Math.ceil(totalCount / pageSize) }, (_, i) => i + 1)
                       .slice(Math.max(0, currentPage - 3), currentPage + 2)
@@ -398,17 +398,16 @@ const Services = () => {
                         <button
                           key={page}
                           onClick={() => setCurrentPage(page)}
-                          className={`inline-flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm transition-colors ${
-                            currentPage === page
-                              ? 'bg-primary text-white'
-                              : 'bg-background-light dark:bg-background-dark text-subtle-light dark:text-subtle-dark hover:bg-primary/20'
-                          }`}
+                          className={`inline-flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm transition-colors ${currentPage === page
+                            ? 'bg-primary text-white'
+                            : 'bg-background-light dark:bg-background-dark text-subtle-light dark:text-subtle-dark hover:bg-primary/20'
+                            }`}
                         >
                           {page}
                         </button>
                       ))}
                   </div>
-                  
+
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(totalCount / pageSize)))}
                     disabled={currentPage === Math.ceil(totalCount / pageSize)}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import useCompany from '../../hooks/useCompany'
 import { getImageUrl } from '../../utils/api'
+import LocationPicker from '../LocationPicker/LocationPicker'
 import SimpleLocationPicker from '../Map/SimpleLocationPicker'
 
 const CompanyProfile = () => {
@@ -354,7 +355,7 @@ const CompanyProfile = () => {
           {/* Konum Bilgileri */}
           <div className="md:col-span-2">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-border-light dark:border-border-dark">
-              <SimpleLocationPicker
+              <LocationPicker
                 latitude={profileData.latitude}
                 longitude={profileData.longitude}
                 onLocationChange={handleLocationChange}

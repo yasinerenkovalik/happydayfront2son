@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://mutlugunum.com.tr/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1
+
+# Disallow admin pages
+Disallow: /admin/
+Disallow: /login/
+Disallow: /dashboard/
+
+# Allow important pages
+Allow: /services
+Allow: /contact
+Allow: /organizasyon/
+Allow: /istanbul-organizasyon
+Allow: /ankara-organizasyon
+Allow: /izmir-organizasyon
+
+# Block search parameters
+Disallow: /*?*
+Allow: /*?utm_*
