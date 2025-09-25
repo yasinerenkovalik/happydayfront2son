@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import useOrganizations from '../hooks/useOrganizations'
 import { useCities, useDistricts, useCategories } from '../hooks/useFilterData'
 import { getImageUrl } from '../utils/api'
+import OrganizationMap from '../components/Map/OrganizationMap'
 
 const Services = () => {
   const [searchParams] = useSearchParams()
@@ -18,6 +19,7 @@ const Services = () => {
   const [debouncedFilters, setDebouncedFilters] = useState(filters)
   const [sortBy, setSortBy] = useState('Popülerliğe Göre')
   const [currentPage, setCurrentPage] = useState(1)
+  const [viewMode, setViewMode] = useState('grid') // 'grid' veya 'map'
   const pageSize = 6
 
   // Debouncing için useEffect
@@ -296,92 +298,136 @@ const Services = () => {
                 </p>
 
                 <div className="flex items-center gap-4">
-                  <label htmlFor="sort" className="text-sm font-medium text-content-light dark:text-content-dark">
-                    Sırala:
-                  </label>
-                  <select
-                    id="sort"
-                    name="sort"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-md shadow-sm focus:ring-primary focus:border-primary text-content-light dark:text-content-dark pr-8"
-                  >
-                    <option>Popülerliğe Göre</option>
-                    <option>Fiyata Göre (Artan)</option>
-                    <option>Fiyata Göre (Azalan)</option>
-                    <option>Tarihe Göre (En Yeni)</option>
-                  </select>
+                  {/* Görünüm Modu Seçici */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-content-light dark:text-content-dark">
+                      Görünüm:
+                    </span>
+                    <div className="flex bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg p-1">
+                      <button
+                        onClick={() => setViewMode('grid')}
+                        className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                          viewMode === 'grid'
+                            ? 'bg-primary text-white'
+                            : 'text-content-light dark:text-content-dark hover:bg-primary/10'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-sm">grid_view</span>
+                        Liste
+                      </button>
+                      <button
+                        onClick={() => setViewMode('map')}
+                        className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                          viewMode === 'map'
+                            ? 'bg-primary text-white'
+                            : 'text-content-light dark:text-content-dark hover:bg-primary/10'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-sm">map</span>
+                        Harita
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Sıralama - Sadece liste görünümünde göster */}
+                  {viewMode === 'grid' && (
+                    <div className="flex items-center gap-4">
+                      <label htmlFor="sort" className="text-sm font-medium text-content-light dark:text-content-dark">
+                        Sırala:
+                      </label>
+                      <select
+                        id="sort"
+                        name="sort"
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-md shadow-sm focus:ring-primary focus:border-primary text-content-light dark:text-content-dark pr-8"
+                      >
+                        <option>Popülerliğe Göre</option>
+                        <option>Fiyata Göre (Artan)</option>
+                        <option>Fiyata Göre (Azalan)</option>
+                        <option>Tarihe Göre (En Yeni)</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Organizations Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {organizations.map((org) => (
-                  <div key={org.id} className="bg-background-light dark:bg-background-dark rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 overflow-hidden flex flex-col">
-                    <div className="w-full h-48 overflow-hidden">
-                      <img
-                        alt={org.title}
-                        className="w-full h-full object-cover"
-                        src={getImageUrl(org.coverPhotoPath)}
-                        onError={(e) => {
-                          e.target.src = 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'
-                        }}
-                      />
-                    </div>
+              {/* Content Area - Grid veya Map */}
+              {viewMode === 'grid' ? (
+                /* Organizations Grid */
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {organizations.map((org) => (
+                    <div key={org.id} className="bg-background-light dark:bg-background-dark rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 overflow-hidden flex flex-col">
+                      <div className="w-full h-48 overflow-hidden">
+                        <img
+                          alt={org.title}
+                          className="w-full h-full object-cover"
+                          src={getImageUrl(org.coverPhotoPath)}
+                          onError={(e) => {
+                            e.target.src = 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'
+                          }}
+                        />
+                      </div>
 
-                    <div className="p-6 flex flex-col flex-grow">
-                      <h2 className="text-xl font-bold text-content-light dark:text-content-dark">
-                        {org.title || 'Başlık Yok'}
-                      </h2>
-                      <div className="mt-2 flex items-center gap-4 text-sm text-subtle-light dark:text-subtle-dark">
-                        <div className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-sm">location_on</span>
-                          <span>{org.cityName || 'Şehir'}, {org.districtName || 'İlçe'}</span>
-                        </div>
-                        {org.maxGuestCount && (
+                      <div className="p-6 flex flex-col flex-grow">
+                        <h2 className="text-xl font-bold text-content-light dark:text-content-dark">
+                          {org.title || 'Başlık Yok'}
+                        </h2>
+                        <div className="mt-2 flex items-center gap-4 text-sm text-subtle-light dark:text-subtle-dark">
                           <div className="flex items-center gap-1">
-                            <span className="material-symbols-outlined text-sm">group</span>
-                            <span>{org.maxGuestCount} kişi</span>
+                            <span className="material-symbols-outlined text-sm">location_on</span>
+                            <span>{org.cityName || 'Şehir'}, {org.districtName || 'İlçe'}</span>
                           </div>
-                        )}
-                      </div>
+                          {org.maxGuestCount && (
+                            <div className="flex items-center gap-1">
+                              <span className="material-symbols-outlined text-sm">group</span>
+                              <span>{org.maxGuestCount} kişi</span>
+                            </div>
+                          )}
+                        </div>
 
-                      <p className="mt-4 text-content-light dark:text-content-dark flex-grow text-sm leading-relaxed">
-                        {truncateDescription(org.description)}
-                      </p>
+                        <p className="mt-4 text-content-light dark:text-content-dark flex-grow text-sm leading-relaxed">
+                          {truncateDescription(org.description)}
+                        </p>
 
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                          {org.duration || 'Süre belirtilmemiş'}
-                        </span>
-                        {org.isOutdoor && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                            Açık Alan
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                            {org.duration || 'Süre belirtilmemiş'}
                           </span>
-                        )}
-                      </div>
+                          {org.isOutdoor && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                              Açık Alan
+                            </span>
+                          )}
+                        </div>
 
-                      <div className="mt-6 flex items-center justify-between">
-                        <span className="text-lg font-bold text-primary">
-                          {formatPrice(org.price)}
-                        </span>
-                        <Link
-                          to={`/organization/${org.id}`}
-                          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-full hover:bg-primary/90 transition-colors"
-                        >
-                          Detaylar
-                          <span className="material-symbols-outlined text-base">
-                            arrow_forward
+                        <div className="mt-6 flex items-center justify-between">
+                          <span className="text-lg font-bold text-primary">
+                            {formatPrice(org.price)}
                           </span>
-                        </Link>
+                          <Link
+                            to={`/organization/${org.id}`}
+                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-primary rounded-full hover:bg-primary/90 transition-colors"
+                          >
+                            Detaylar
+                            <span className="material-symbols-outlined text-base">
+                              arrow_forward
+                            </span>
+                          </Link>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                /* Organizations Map */
+                <div className="bg-background-light dark:bg-background-dark rounded-xl shadow-lg border border-border-light dark:border-border-dark p-6">
+                  <OrganizationMap organizations={organizations} />
+                </div>
+              )}
 
-              {/* Pagination */}
-              {totalCount > pageSize && (
+              {/* Pagination - Sadece grid görünümünde göster */}
+              {viewMode === 'grid' && totalCount > pageSize && (
                 <nav aria-label="Pagination" className="mt-16 flex items-center justify-center">
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
