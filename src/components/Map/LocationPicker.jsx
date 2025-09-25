@@ -10,21 +10,53 @@ const LocationPicker = ({ latitude, longitude, onLocationChange, disabled = fals
   // Google Maps API'sini yükle
   useEffect(() => {
     const loadGoogleMaps = () => {
+      // Zaten yüklendi mi kontrol et
       if (window.google && window.google.maps) {
         initializeMap()
         return
       }
 
       // Google Maps API script'ini yükle
+      const scriptId = 'google-maps-api-script'
+      const existingScript = document.getElementById(scriptId)
+      
+      if (existingScript) {
+        // Eğer script zaten eklenmişse, yüklenmesini bekle
+        if (existingScript.dataset.loaded === 'true') {
+          initializeMap()
+        } else {
+          existingScript.addEventListener('load', initializeMap)
+          existingScript.addEventListener('error', () => {
+            setError('Google Maps yüklenemedi')
+            setIsLoading(false)
+          })
+        }
+        return
+      }
+
+      const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+      if (!apiKey) {
+        setError('Google Maps API anahtarı bulunamadı')
+        setIsLoading(false)
+        return
+      }
+
       const script = document.createElement('script')
-      script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places`
+      script.id = scriptId
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
       script.async = true
       script.defer = true
-      script.onload = initializeMap
+      
+      script.onload = () => {
+        script.dataset.loaded = 'true'
+        initializeMap()
+      }
+      
       script.onerror = () => {
         setError('Google Maps yüklenemedi')
         setIsLoading(false)
       }
+      
       document.head.appendChild(script)
     }
 
@@ -33,8 +65,35 @@ const LocationPicker = ({ latitude, longitude, onLocationChange, disabled = fals
 
   const initializeMap = () => {
     try {
-      const initialLat = parseFloat(latitude) || 41.0082
-      const initialLng = parseFloat(longitude) || 28.9784
+      // Koordinatları güvenli bir şekilde parse et
+      let initialLat = 41.0082; // Varsayılan değer
+      let initialLng = 28.9784; // Varsayılan değer
+
+      if (latitude && longitude) {
+        const parsedLat = parseFloat(latitude);
+        const parsedLng = parseFloat(longitude);
+        
+        if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
+          initialLat = parsedLat;
+          initialLng = parsedLng;
+        }
+      }
+
+      // Harita konteynerinin varlığını ve boyutlarının uygunluğunu kontrol et
+      if (!mapRef.current) {
+        console.error('Map container not found');
+        setError('Harita konteyneri bulunamadı');
+        setIsLoading(false);
+        return;
+      }
+
+      // Google Maps API'nin yüklendiğini teyit et
+      if (!window.google || !window.google.maps) {
+        console.error('Google Maps API not loaded');
+        setError('Google Maps API yüklenemedi');
+        setIsLoading(false);
+        return;
+      }
 
       const mapInstance = new window.google.maps.Map(mapRef.current, {
         center: { lat: initialLat, lng: initialLng },
@@ -42,6 +101,8 @@ const LocationPicker = ({ latitude, longitude, onLocationChange, disabled = fals
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,
+        zoomControl: true,
+        scaleControl: true,
       })
 
       const markerInstance = new window.google.maps.Marker({
@@ -72,7 +133,8 @@ const LocationPicker = ({ latitude, longitude, onLocationChange, disabled = fals
       setMarker(markerInstance)
       setIsLoading(false)
     } catch (err) {
-      setError('Harita başlatılamadı')
+      console.error('Harita başlatma hatası:', err)
+      setError('Harita başlatılamadı: ' + err.message)
       setIsLoading(false)
     }
   }

@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import useCompany from '../../hooks/useCompany'
 import { getImageUrl, getApiUrl } from '../../utils/api'
 import { useCities, useDistricts } from '../../hooks/useFilterData'
-import LocationPicker from '../LocationPicker/LocationPicker'
+import SimpleLocationPicker from '../Map/SimpleLocationPicker'
 
 const CompanyProfile = () => {
   const { user, getAuthHeaders } = useAuth()
@@ -417,12 +417,140 @@ const CompanyProfile = () => {
           {/* Konum Bilgileri */}
           <div className="md:col-span-2">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-border-light dark:border-border-dark">
-              <LocationPicker
-                latitude={profileData.latitude}
-                longitude={profileData.longitude}
-                onLocationChange={handleLocationChange}
-                disabled={saving}
-              />
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-content-light dark:text-content-dark">
+                    Konum Bilgileri
+                  </h3>
+                  <div className="flex items-center gap-2 text-sm text-subtle-light dark:text-subtle-dark">
+                    <span className="material-symbols-outlined text-sm">location_on</span>
+                    <span>Haritadan seçin veya koordinat girin</span>
+                  </div>
+                </div>
+
+                {/* Manuel Koordinat Girişi */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-content-light dark:text-content-dark mb-2">
+                      Enlem (Latitude) *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={profileData.latitude}
+                      onChange={(e) => {
+                        const newLat = e.target.value
+                        setProfileData(prev => ({...prev, latitude: newLat}))
+                        if (newLat && profileData.longitude) {
+                          handleLocationChange(parseFloat(newLat), parseFloat(profileData.longitude))
+                        }
+                      }}
+                      disabled={saving}
+                      className="w-full px-4 py-2 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+                      placeholder="Örn: 41.0082"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-content-light dark:text-content-dark mb-2">
+                      Boylam (Longitude) *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={profileData.longitude}
+                      onChange={(e) => {
+                        const newLng = e.target.value
+                        setProfileData(prev => ({...prev, longitude: newLng}))
+                        if (profileData.latitude && newLng) {
+                          handleLocationChange(parseFloat(profileData.latitude), parseFloat(newLng))
+                        }
+                      }}
+                      disabled={saving}
+                      className="w-full px-4 py-2 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+                      placeholder="Örn: 28.9784"
+                    />
+                  </div>
+                </div>
+
+                {/* Mevcut Konum Butonu */}
+                <div className="flex items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                          (position) => {
+                            const lat = position.coords.latitude
+                            const lng = position.coords.longitude
+                            setProfileData(prev => ({
+                              ...prev,
+                              latitude: lat,
+                              longitude: lng
+                            }))
+                            handleLocationChange(lat, lng)
+                          },
+                          (error) => {
+                            console.error('Konum alınamadı:', error)
+                            alert('Konum bilgisi alınamadı. Lütfen tarayıcı ayarlarınızı kontrol edin.')
+                          }
+                        )
+                      } else {
+                        alert('Tarayıcınız konum hizmetlerini desteklemiyor.')
+                      }
+                    }}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-sm">my_location</span>
+                    Mevcut Konumumu Al
+                  </button>
+
+                  {/* İstanbul Merkez Butonu */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const istanbulLat = 41.0082
+                      const istanbulLng = 28.9784
+                      setProfileData(prev => ({
+                        ...prev,
+                        latitude: istanbulLat,
+                        longitude: istanbulLng
+                      }))
+                      handleLocationChange(istanbulLat, istanbulLng)
+                    }}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-sm">location_city</span>
+                    İstanbul Merkez
+                  </button>
+                </div>
+
+                {/* Konum Bilgisi Gösterimi */}
+                {profileData.latitude && profileData.longitude && (
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                    <div className="flex items-start gap-2">
+                      <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-sm mt-0.5">check_circle</span>
+                      <div className="text-sm">
+                        <p className="text-green-800 dark:text-green-200 font-medium">
+                          Seçili Konum: {parseFloat(profileData.latitude).toFixed(6)}, {parseFloat(profileData.longitude).toFixed(6)}
+                        </p>
+                        <p className="text-green-700 dark:text-green-300 text-xs mt-1">
+                          Bu koordinatlar şirket konumunuz olarak kaydedilecek
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Harita Bileşeni */}
+                <SimpleLocationPicker
+                  latitude={profileData.latitude}
+                  longitude={profileData.longitude}
+                  onLocationChange={handleLocationChange}
+                  disabled={saving}
+                />
+              </div>
             </div>
           </div>
         </div>

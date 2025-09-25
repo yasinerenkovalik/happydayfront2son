@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCities, useDistricts, useCategories } from '../../hooks/useFilterData'
+import SimpleLocationPicker from '../Map/SimpleLocationPicker'
 
 const SearchForm = () => {
   const navigate = useNavigate()
@@ -9,6 +10,8 @@ const SearchForm = () => {
     district: '',
     venueType: ''
   })
+  const [showLocationPicker, setShowLocationPicker] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState({ lat: null, lng: null })
 
   // API'den verileri çek
   const { cities } = useCities()
@@ -29,6 +32,12 @@ const SearchForm = () => {
     }
     if (formData.venueType) {
       searchParams.set('categoryId', formData.venueType)
+    }
+    
+    // Konum bilgileri varsa ekle
+    if (selectedLocation.lat && selectedLocation.lng) {
+      searchParams.set('lat', selectedLocation.lat.toString())
+      searchParams.set('lng', selectedLocation.lng.toString())
     }
     
     // Services sayfasına yönlendir
@@ -52,6 +61,15 @@ const SearchForm = () => {
       
       return newData
     })
+  }
+
+  const handleLocationSelect = (lat, lng) => {
+    setSelectedLocation({ lat, lng })
+    setShowLocationPicker(false)
+  }
+
+  const clearLocation = () => {
+    setSelectedLocation({ lat: null, lng: null })
   }
 
   return (
@@ -116,13 +134,67 @@ const SearchForm = () => {
           </select>
         </div>
 
-        <button
-          type="submit"
-          className="bg-primary text-white font-bold px-6 py-3 rounded-full shrink-0 hover:bg-primary/90 transition-colors w-full"
-        >
-          Ara
-        </button>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={() => setShowLocationPicker(true)}
+            className="bg-green-600 text-white font-bold px-4 py-3 rounded-full shrink-0 hover:bg-green-700 transition-colors w-full"
+          >
+            Haritadan
+          </button>
+          <button
+            type="submit"
+            className="bg-primary text-white font-bold px-4 py-3 rounded-full shrink-0 hover:bg-primary/90 transition-colors w-full"
+          >
+            Ara
+          </button>
+        </div>
       </div>
+
+      {/* Konum Seçici Modal */}
+      {showLocationPicker && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background-light dark:bg-background-dark rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-content-light dark:text-content-dark">
+                  Harita Üzerinden Konum Seçin
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowLocationPicker(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+              
+              <SimpleLocationPicker
+                latitude={selectedLocation.lat}
+                longitude={selectedLocation.lng}
+                onLocationChange={handleLocationSelect}
+              />
+
+              {selectedLocation.lat && selectedLocation.lng && (
+                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                      Seçilen Konum: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={clearLocation}
+                      className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                    >
+                      Temizle
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Layout */}
       <div className="md:hidden bg-background-light dark:bg-background-dark rounded-xl shadow-lg p-4 space-y-4">
@@ -184,12 +256,21 @@ const SearchForm = () => {
           </select>
         </div>
 
-        <button
-          type="submit"
-          className="bg-primary text-white font-bold px-6 py-3 rounded-lg w-full hover:bg-primary/90 transition-colors"
-        >
-          Ara
-        </button>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setShowLocationPicker(true)}
+            className="bg-green-600 text-white font-bold px-4 py-3 rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Haritadan
+          </button>
+          <button
+            type="submit"
+            className="bg-primary text-white font-bold px-4 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Ara
+          </button>
+        </div>
       </div>
     </form>
   )
