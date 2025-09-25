@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { useCities, useDistricts, useCategories } from '../../hooks/useFilterData'
+import { useCategories } from '../../hooks/useFilterData'
+import useCompany from '../../hooks/useCompany'
 import { getApiUrl } from '../../utils/api'
 
 const AddOrganization = () => {
@@ -15,8 +16,6 @@ const AddOrganization = () => {
     price: '',
     maxGuestCount: '',
     duration: '',
-    cityId: '',
-    districtId: '',
     categoryId: '',
     isOutdoor: false,
     coverPhoto: null,
@@ -28,28 +27,18 @@ const AddOrganization = () => {
   })
 
   // API'den verileri çek
-  const { cities } = useCities()
-  const { districts } = useDistricts(formData.cityId)
   const { categories } = useCategories()
+  const { company } = useCompany()
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target
     
-    setFormData(prev => {
-      const newData = {
-        ...prev,
-        [name]: type === 'checkbox' ? checked : 
-                type === 'file' ? (name === 'images' ? Array.from(files) : files[0]) : 
-                value
-      }
-      
-      // Şehir değiştiğinde ilçeyi sıfırla
-      if (name === 'cityId') {
-        newData.districtId = ''
-      }
-      
-      return newData
-    })
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : 
+              type === 'file' ? (name === 'images' ? Array.from(files) : files[0]) : 
+              value
+    }))
     
     // Hata mesajını temizle
     if (error) setError('')
@@ -72,8 +61,6 @@ const AddOrganization = () => {
       submitData.append('Price', parseFloat(formData.price))
       submitData.append('MaxGuestCount', parseInt(formData.maxGuestCount))
       submitData.append('Duration', formData.duration)
-      submitData.append('CityId', parseInt(formData.cityId))
-      submitData.append('DistrictId', parseInt(formData.districtId))
       submitData.append('CategoryId', parseInt(formData.categoryId))
       submitData.append('IsOutdoor', formData.isOutdoor)
       submitData.append('CompanyId', user?.companyId)
@@ -119,8 +106,6 @@ const AddOrganization = () => {
           price: '',
           maxGuestCount: '',
           duration: '',
-          cityId: '',
-          districtId: '',
           categoryId: '',
           isOutdoor: false,
           coverPhoto: null,
@@ -256,50 +241,26 @@ const AddOrganization = () => {
             />
           </div>
 
-          {/* Şehir */}
-          <div>
-            <label htmlFor="cityId" className="block text-sm font-medium text-content-light dark:text-content-dark mb-2">
-              Şehir *
-            </label>
-            <select
-              id="cityId"
-              name="cityId"
-              required
-              value={formData.cityId}
-              onChange={handleChange}
-              disabled={loading}
-              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
-            >
-              <option value="">Şehir Seçin</option>
-              {cities.map((city) => (
-                <option key={city.id} value={city.id}>
-                  {city.cityName}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* İlçe */}
-          <div>
-            <label htmlFor="districtId" className="block text-sm font-medium text-content-light dark:text-content-dark mb-2">
-              İlçe *
-            </label>
-            <select
-              id="districtId"
-              name="districtId"
-              required
-              value={formData.districtId}
-              onChange={handleChange}
-              disabled={loading || !formData.cityId}
-              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
-            >
-              <option value="">İlçe Seçin</option>
-              {districts.map((district) => (
-                <option key={district.id} value={district.id}>
-                  {district.districtName || district.name}
-                </option>
-              ))}
-            </select>
+          {/* Konum Bilgisi (Company'den otomatik) */}
+          <div className="md:col-span-2">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="material-symbols-outlined text-blue-600 dark:text-blue-400">location_on</span>
+                <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                  Organizasyon Konumu
+                </h3>
+              </div>
+              <p className="text-blue-700 dark:text-blue-300 text-sm">
+                {company ? (
+                  `${company.cityName || 'Şehir belirtilmemiş'}, ${company.districtName || 'İlçe belirtilmemiş'}`
+                ) : (
+                  'Şirket bilgileri yükleniyor...'
+                )}
+              </p>
+              <p className="text-blue-600 dark:text-blue-400 text-xs mt-1">
+                Konum şirket profilinizden otomatik alınmaktadır. Değiştirmek için şirket profilini güncelleyin.
+              </p>
+            </div>
           </div>
 
           {/* Kategori */}

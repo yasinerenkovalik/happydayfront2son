@@ -45,7 +45,7 @@ const OrganizationDetail = () => {
       formDataToSend.append('OrganizationId', organization.id)
 
       // API'ye gönder
-      const response = await fetch('http://193.111.77.142/api/ContactMessage/add', {
+      const response = await fetch(getApiUrl('/ContactMessage/add'), {
         method: 'POST',
         body: formDataToSend
       })
@@ -671,8 +671,8 @@ const OrganizationDetail = () => {
 
                 {submitMessage && (
                   <div className={`p-3 rounded-md text-sm ${submitMessage.includes('başarıyla')
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                      : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                     }`}>
                     {submitMessage}
                   </div>

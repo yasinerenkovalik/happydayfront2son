@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import useCompany from '../../hooks/useCompany'
-import { getImageUrl } from '../../utils/api'
+import { getImageUrl, getApiUrl } from '../../utils/api'
+import { useCities, useDistricts } from '../../hooks/useFilterData'
 import LocationPicker from '../LocationPicker/LocationPicker'
-import SimpleLocationPicker from '../Map/SimpleLocationPicker'
 
 const CompanyProfile = () => {
   const { user, getAuthHeaders } = useAuth()
@@ -11,6 +11,9 @@ const CompanyProfile = () => {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+
+  // City ve District verileri
+  const { cities } = useCities()
 
   const [profileData, setProfileData] = useState({
     companyName: '',
@@ -27,6 +30,10 @@ const CompanyProfile = () => {
 
   const [coverPhoto, setCoverPhoto] = useState(null)
   const [coverPhotoPreview, setCoverPhotoPreview] = useState(null)
+
+  // CityId'yi memoize et
+  const selectedCityId = useMemo(() => profileData.cityId, [profileData.cityId])
+  const { districts } = useDistricts(selectedCityId)
 
   // Company verisi geldiğinde form verilerini güncelle
   useEffect(() => {
@@ -54,10 +61,12 @@ const CompanyProfile = () => {
   }, [companyError])
 
   const handleChange = (e) => {
-    setProfileData({
-      ...profileData,
-      [e.target.name]: e.target.value
-    })
+    const { name, value } = e.target
+
+    setProfileData(prev => ({
+      ...prev,
+      [name]: value
+    }))
 
     // Mesajları temizle
     if (error) setError('')
@@ -66,11 +75,11 @@ const CompanyProfile = () => {
 
   // Harita üzerinden konum değiştiğinde
   const handleLocationChange = (lat, lng) => {
-    setProfileData({
-      ...profileData,
+    setProfileData(prev => ({
+      ...prev,
       latitude: lat,
       longitude: lng
-    })
+    }))
 
     // Mesajları temizle
     if (error) setError('')
@@ -112,6 +121,8 @@ const CompanyProfile = () => {
       formData.append('Description', profileData.description)
       formData.append('Latitude', parseFloat(profileData.latitude) || 0)
       formData.append('Longitude', parseFloat(profileData.longitude) || 0)
+      formData.append('CityId', parseInt(profileData.cityId) || 0)
+      formData.append('DistrictId', parseInt(profileData.districtId) || 0)
 
       // Kapak fotoğrafı varsa ekle
       if (coverPhoto) {
@@ -120,7 +131,7 @@ const CompanyProfile = () => {
         formData.append('CoverPhoto', '')
       }
 
-      const response = await fetch(`http://193.111.77.142/api/Company/update`, {
+      const response = await fetch(getApiUrl('/Company/update'), {
         method: 'PUT',
         headers: {
           'Accept': '*/*',
@@ -316,6 +327,57 @@ const CompanyProfile = () => {
               className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
               placeholder="https://www.example.com"
             />
+          </div>
+
+          {/* Şehir */}
+          <div>
+            <label htmlFor="cityId" className="block text-sm font-medium text-content-light dark:text-content-dark mb-2">
+              Şehir *
+            </label>
+            <select
+              id="cityId"
+              name="cityId"
+              required
+              value={profileData.cityId}
+              onChange={handleChange}
+              disabled={saving}
+              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+            >
+              <option value="">Şehir Seçin</option>
+              {cities.map((city) => (
+                <option key={city.id} value={city.id}>
+                  {city.cityName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* İlçe */}
+          <div>
+            <label htmlFor="districtId" className="block text-sm font-medium text-content-light dark:text-content-dark mb-2">
+              İlçe *
+            </label>
+            <select
+              id="districtId"
+              name="districtId"
+              required
+              value={profileData.districtId}
+              onChange={handleChange}
+              disabled={saving || !profileData.cityId}
+              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+            >
+              <option value="">İlçe Seçin</option>
+              {districts.map((district) => (
+                <option key={district.id} value={district.id}>
+                  {district.districtName}
+                </option>
+              ))}
+            </select>
+            {!profileData.cityId && (
+              <p className="text-xs text-subtle-light dark:text-subtle-dark mt-1">
+                Önce şehir seçin
+              </p>
+            )}
           </div>
 
           {/* Adres */}

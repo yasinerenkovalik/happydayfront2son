@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { getApiUrl } from '../utils/api'
 
 const CompanyRegister = () => {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  
+
   const [formData, setFormData] = useState({
     token: '',
     email: '',
@@ -23,11 +24,11 @@ const CompanyRegister = () => {
   useEffect(() => {
     const rawToken = searchParams.get('token')
     const email = searchParams.get('email')
-    
+
     console.log('URL Parameters:')
     console.log('Raw token from URL:', rawToken)
     console.log('Email from URL:', email)
-    
+
     if (rawToken) {
       // Token'ı parse et
       let actualToken = rawToken
@@ -39,9 +40,9 @@ const CompanyRegister = () => {
         // JSON değilse direkt kullan
         actualToken = rawToken
       }
-      
+
       console.log('Parsed token:', actualToken)
-      
+
       setFormData(prev => ({
         ...prev,
         token: actualToken,
@@ -108,7 +109,7 @@ const CompanyRegister = () => {
       console.log('Sending registration request:', requestData)
       console.log('Token length:', formData.token?.length)
 
-      const response = await fetch(`${import.meta.env.PROD ? '/api' : 'http://193.111.77.142/api'}/company/register-by-invite`, {
+      const response = await fetch(getApiUrl('/company/register-by-invite'), {
         method: 'POST',
         headers: {
           'accept': 'text/plain',

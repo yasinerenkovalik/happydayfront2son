@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { getApiUrl } from '../utils/api'
 
 const AdminDashboard = () => {
   const { user, logout, getAuthHeaders } = useAuth()
@@ -91,7 +92,7 @@ const AdminDashboard = () => {
       console.log('Sending request with data:', requestData)
       console.log('Headers:', headers)
 
-      const response = await fetch(`${import.meta.env.PROD ? '/api' : 'http://193.111.77.142/api'}/admin/invitations/create`, {
+      const response = await fetch(getApiUrl('/admin/invitations/create'), {
         method: 'POST',
         headers: headers,
         body: JSON.stringify(requestData)

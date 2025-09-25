@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { getApiUrl } from '../utils/api'
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams()
@@ -75,7 +76,7 @@ const ResetPassword = () => {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.PROD ? '/api' : 'http://193.111.77.142/api'}/Company/reset-password`, {
+      const response = await fetch(getApiUrl('/Company/reset-password'), {
         method: 'POST',
         headers: {
           'accept': 'text/plain',

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { getApiUrl } from '../utils/api'
 
 const useCompany = () => {
   const { user, getAuthHeaders } = useAuth()
@@ -16,7 +17,7 @@ const useCompany = () => {
         throw new Error('Şirket ID bulunamadı')
       }
 
-      const response = await fetch(`http://193.111.77.142/api/Company/getbyid?Id=${user.companyId}`, {
+      const response = await fetch(getApiUrl(`/Company/getbyid?Id=${user.companyId}`), {
         method: 'GET',
         headers: {
           'Accept': 'text/plain',

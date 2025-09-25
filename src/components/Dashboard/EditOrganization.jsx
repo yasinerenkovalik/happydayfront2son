@@ -18,8 +18,6 @@ const EditOrganization = ({ organizationId, onClose, onUpdate }) => {
     price: '',
     maxGuestCount: '',
     duration: '',
-    cityId: '',
-    districtId: '',
     categoryId: '',
     isOutdoor: false,
     coverPhoto: null,
@@ -39,8 +37,7 @@ const EditOrganization = ({ organizationId, onClose, onUpdate }) => {
 
 
   // API'den verileri çek
-  const { cities } = useCities()
-  const { districts } = useDistricts(formData.cityId)
+
   const { categories } = useCategories()
 
   useEffect(() => {
@@ -74,8 +71,6 @@ const EditOrganization = ({ organizationId, onClose, onUpdate }) => {
           price: org.price || '',
           maxGuestCount: org.maxGuestCount || '',
           duration: org.duration || '',
-          cityId: org.cityId || '',
-          districtId: org.districtId || '',
           categoryId: org.categoryId || '',
           isOutdoor: org.isOutdoor || false,
           coverPhoto: null, // Yeni dosya seçilmediği sürece null
@@ -102,23 +97,20 @@ const EditOrganization = ({ organizationId, onClose, onUpdate }) => {
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target
-    
+
     setFormData(prev => {
       const newData = {
         ...prev,
-        [name]: type === 'checkbox' ? checked : 
-                type === 'file' ? files[0] : 
-                value
+        [name]: type === 'checkbox' ? checked :
+          type === 'file' ? files[0] :
+            value
       }
-      
-      // Şehir değiştiğinde ilçeyi sıfırla
-      if (name === 'cityId') {
-        newData.districtId = ''
-      }
-      
+
+
+
       return newData
     })
-    
+
     // Mesajları temizle
     if (error) setError('')
     if (success) setSuccess(false)
@@ -133,7 +125,7 @@ const EditOrganization = ({ organizationId, onClose, onUpdate }) => {
     try {
       // FormData oluştur (dosya yükleme için)
       const submitData = new FormData()
-      
+
       // Zorunlu alanlar
       submitData.append('Id', formData.id)
       submitData.append('Title', formData.title)
@@ -141,16 +133,16 @@ const EditOrganization = ({ organizationId, onClose, onUpdate }) => {
       submitData.append('Price', parseFloat(formData.price))
       submitData.append('MaxGuestCount', parseInt(formData.maxGuestCount))
       submitData.append('Duration', formData.duration)
-      submitData.append('CityId', parseInt(formData.cityId))
+
       submitData.append('CategoryId', parseInt(formData.categoryId))
       submitData.append('IsOutdoor', formData.isOutdoor)
-      
+
       // Opsiyonel alanlar
       submitData.append('Services', formData.services || '')
       submitData.append('CancelPolicy', formData.cancelPolicy || '')
       submitData.append('ReservationNote', formData.reservationNote || '')
       submitData.append('VideoUrl', formData.videoUrl || '')
-      
+
       // Yeni kapak fotoğrafı seçildiyse ekle
       if (formData.coverPhoto) {
         submitData.append('CoverPhoto', formData.coverPhoto)
@@ -339,28 +331,7 @@ const EditOrganization = ({ organizationId, onClose, onUpdate }) => {
                 />
               </div>
 
-              {/* Şehir */}
-              <div>
-                <label htmlFor="cityId" className="block text-sm font-medium text-content-light dark:text-content-dark mb-2">
-                  Şehir *
-                </label>
-                <select
-                  id="cityId"
-                  name="cityId"
-                  required
-                  value={formData.cityId}
-                  onChange={handleChange}
-                  disabled={saving}
-                  className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
-                >
-                  <option value="">Şehir Seçin</option>
-                  {cities.map((city) => (
-                    <option key={city.id} value={city.id}>
-                      {city.cityName}
-                    </option>
-                  ))}
-                </select>
-              </div>
+
 
               {/* Kategori */}
               <div>
@@ -487,8 +458,8 @@ const EditOrganization = ({ organizationId, onClose, onUpdate }) => {
                   className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
                 />
                 <p className="text-xs text-subtle-light dark:text-subtle-dark mt-1">
-                  {currentImages.coverPhoto 
-                    ? 'Yeni fotoğraf seçmezseniz mevcut fotoğraf korunur' 
+                  {currentImages.coverPhoto
+                    ? 'Yeni fotoğraf seçmezseniz mevcut fotoğraf korunur'
                     : 'Kapak fotoğrafı seçin'
                   }
                 </p>
@@ -509,7 +480,7 @@ const EditOrganization = ({ organizationId, onClose, onUpdate }) => {
                     Resimleri Yönet
                   </button>
                 </div>
-                
+
                 {/* Resim Önizlemesi */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Kapak Fotoğrafı Önizleme */}

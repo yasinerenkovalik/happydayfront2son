@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { getApiUrl } from '../utils/api'
 
 const EmailConfirmation = () => {
   const [searchParams] = useSearchParams()
@@ -26,7 +27,7 @@ const EmailConfirmation = () => {
       console.log('Token:', token)
 
       try {
-        const response = await fetch(`${import.meta.env.PROD ? '/api' : 'http://193.111.77.142/api'}/Company/confirm-email`, {
+        const response = await fetch(getApiUrl('/Company/confirm-email'), {
           method: 'POST',
           headers: {
             'accept': '*/*',

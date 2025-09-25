@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { getApiUrl } from '../utils/api'
 
 const AdminLogin = () => {
   const navigate = useNavigate()
@@ -27,7 +28,7 @@ const AdminLogin = () => {
     setError('')
 
     try {
-      const response = await fetch(`${import.meta.env.PROD ? '/api' : 'http://193.111.77.142/api'}/User/login`, {
+      const response = await fetch(getApiUrl('/User/login'), {
         method: 'POST',
         headers: {
           'accept': 'text/plain',

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getApiUrl } from '../utils/api'
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('')
@@ -14,7 +15,7 @@ const ForgotPassword = () => {
     setError('')
 
     try {
-      const response = await fetch(`${import.meta.env.PROD ? '/api' : 'http://193.111.77.142/api'}/Company/request-password-reset`, {
+      const response = await fetch(getApiUrl('/Company/request-password-reset'), {
         method: 'POST',
         headers: {
           'accept': 'text/plain',
