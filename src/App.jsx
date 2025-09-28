@@ -17,6 +17,7 @@ import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
 import Dashboard from './pages/Dashboard'
 import OrganizationDetail from './pages/OrganizationDetail'
+import CompanyDetail from './pages/CompanyDetail'
 import NotFound from './pages/NotFound'
 import AdminProtectedRoute from './components/AdminProtectedRoute'
 
@@ -29,6 +30,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/services" element={<Services />} />
             <Route path="/organization/:id" element={<OrganizationDetail />} />
+            <Route path="/company/:id" element={<CompanyDetail />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/blog" element={<Blog />} />

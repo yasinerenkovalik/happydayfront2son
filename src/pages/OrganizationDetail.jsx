@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import useOrganizationDetail from '../hooks/useOrganizationDetail'
 import ImageGallery from '../components/ImageGallery/ImageGallery'
 import SimpleLocationPicker from '../components/Map/SimpleLocationPicker'
-import { getImageUrl } from '../utils/api'
+import { getImageUrl, getApiUrl } from '../utils/api'
 
 const OrganizationDetail = () => {
   const { id } = useParams()
@@ -156,6 +156,19 @@ const OrganizationDetail = () => {
               {organization.title}
             </h1>
 
+            {/* Company Profile Button */}
+            {organization.companyId && (
+              <div className="mt-4">
+                <Link 
+                  to={`/company/${organization.companyId}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors duration-200"
+                >
+                  <span className="material-symbols-outlined text-sm">business</span>
+                  <span className="font-medium">Şirket Profili</span>
+                  <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                </Link>
+              </div>
+            )}
 
             <div className="mt-2 flex items-center gap-4 text-subtle-light dark:text-subtle-dark">
               <div className="flex items-center gap-1">
@@ -241,38 +254,7 @@ const OrganizationDetail = () => {
               </div>
             )}
           </div>
-
-          {/* Description */}
-          <div className="mb-8">
-            <div className="relative">
-              {/* Gradient background */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 rounded-2xl"></div>
-
-              {/* Content */}
-              <div className="relative bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-border-light/50 dark:border-border-dark/50">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center shadow-lg">
-                    <span className="material-symbols-outlined text-white text-xl">description</span>
-                  </div>
-                  <h2 className="text-3xl font-bold bg-gradient-to-r from-content-light to-primary bg-clip-text text-transparent dark:from-content-dark dark:to-primary">
-                    Organizasyon Detayları
-                  </h2>
-                </div>
-
-                <div className="prose prose-lg max-w-none">
-                  <div className="text-content-light/80 dark:text-content-dark/80 leading-relaxed text-lg whitespace-pre-line font-medium">
-                    {organization.description}
-                  </div>
-                </div>
-
-                {/* Decorative elements */}
-                <div className="absolute top-4 right-4 w-20 h-20 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-xl"></div>
-                <div className="absolute bottom-4 left-4 w-16 h-16 bg-gradient-to-tr from-primary/5 to-transparent rounded-full blur-lg"></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Price */}
+            {/* Price */}
           <div className="mb-8">
             <div className="relative overflow-hidden">
               {/* Animated background */}
@@ -464,6 +446,38 @@ const OrganizationDetail = () => {
             </div>
           </div>
 
+          {/* Description */}
+          <div className="mb-8">
+            <div className="relative">
+              {/* Gradient background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 rounded-2xl"></div>
+
+              {/* Content */}
+              <div className="relative bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl border border-border-light/50 dark:border-border-dark/50">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="material-symbols-outlined text-white text-xl">description</span>
+                  </div>
+                  <h2 className="text-3xl font-bold bg-gradient-to-r from-content-light to-primary bg-clip-text text-transparent dark:from-content-dark dark:to-primary">
+                    Organizasyon Detayları
+                  </h2>
+                </div>
+
+                <div className="prose prose-lg max-w-none">
+                  <div className="text-content-light/80 dark:text-content-dark/80 leading-relaxed text-lg whitespace-pre-line font-medium">
+                    {organization.description}
+                  </div>
+                </div>
+
+                {/* Decorative elements */}
+                <div className="absolute top-4 right-4 w-20 h-20 bg-gradient-to-br from-primary/10 to-transparent rounded-full blur-xl"></div>
+                <div className="absolute bottom-4 left-4 w-16 h-16 bg-gradient-to-tr from-primary/5 to-transparent rounded-full blur-lg"></div>
+              </div>
+            </div>
+          </div>
+
+        
+
           {/* Konum Haritası */}
           {organization.latitude && organization.longitude && (
             <div className="mb-8">
@@ -491,70 +505,13 @@ const OrganizationDetail = () => {
                     />
                   </div>
 
-                  {/* Konum Detayları */}
-                  <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="material-symbols-outlined text-red-600 dark:text-red-400 text-sm">place</span>
-                        <span className="text-sm font-medium text-red-800 dark:text-red-200">Adres</span>
-                      </div>
-                      <p className="text-red-700 dark:text-red-300 text-sm">
-                        {organization.cityName}, {organization.districtName}
-                      </p>
-                    </div>
+                
+               
 
-                    <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="material-symbols-outlined text-red-600 dark:text-red-400 text-sm">gps_fixed</span>
-                        <span className="text-sm font-medium text-red-800 dark:text-red-200">Koordinatlar</span>
-                      </div>
-                      <p className="text-red-700 dark:text-red-300 text-xs font-mono">
-                        {parseFloat(organization.latitude).toFixed(6)}, {parseFloat(organization.longitude).toFixed(6)}
-                      </p>
-                    </div>
-                  </div>
+                
 
                   {/* Harici Harita Linkleri */}
-                  <div className="mt-6 flex flex-wrap gap-3">
-                    <a
-                      href={`https://www.google.com/maps?q=${organization.latitude},${organization.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                    >
-                      <span className="material-symbols-outlined text-sm">map</span>
-                      Google Maps'te Aç
-                    </a>
-
-                    <a
-                      href={`https://www.openstreetmap.org/?mlat=${organization.latitude}&mlon=${organization.longitude}&zoom=15`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                    >
-                      <span className="material-symbols-outlined text-sm">public</span>
-                      OpenStreetMap'te Aç
-                    </a>
-
-                    <button
-                      onClick={() => {
-                        if (navigator.share) {
-                          navigator.share({
-                            title: organization.title,
-                            text: `${organization.title} - Konum`,
-                            url: `https://www.google.com/maps?q=${organization.latitude},${organization.longitude}`
-                          })
-                        } else {
-                          navigator.clipboard.writeText(`https://www.google.com/maps?q=${organization.latitude},${organization.longitude}`)
-                          alert('Konum linki panoya kopyalandı!')
-                        }
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
-                    >
-                      <span className="material-symbols-outlined text-sm">share</span>
-                      Konumu Paylaş
-                    </button>
-                  </div>
+              
 
                   {/* Decorative elements */}
                   <div className="absolute top-4 right-4 w-20 h-20 bg-gradient-to-br from-red-500/10 to-transparent rounded-full blur-xl"></div>

@@ -135,13 +135,7 @@ const SearchForm = () => {
         </div>
 
         <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() => setShowLocationPicker(true)}
-            className="bg-green-600 text-white font-bold px-4 py-3 rounded-full shrink-0 hover:bg-green-700 transition-colors w-full"
-          >
-            Haritadan
-          </button>
+         
           <button
             type="submit"
             className="bg-primary text-white font-bold px-4 py-3 rounded-full shrink-0 hover:bg-primary/90 transition-colors w-full"

@@ -4,29 +4,24 @@ import { getImageUrl } from '../../utils/api';
 
 const OrganizationMap = ({ organizations = [] }) => {
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [selectedOrg, setSelectedOrg] = useState(null);
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
-  const markersRef = useRef([]);
+  const layersRef = useRef([]); // marker + çizgi + hub hepsi burada tutulacak
 
-  // Fiyat formatlama
   const formatPrice = (price) => {
-    if (!price || isNaN(price)) return '₺0'
-    return `₺${price.toLocaleString('tr-TR')}`
-  }
+    const n = typeof price === 'string' ? Number(price) : price;
+    if (!n || isNaN(n)) return '₺0';
+    return `₺${n.toLocaleString('tr-TR')}`;
+  };
 
-  // Leaflet haritasını yükle
   useEffect(() => {
     const loadLeaflet = async () => {
-      // CSS yükle
       if (!document.querySelector('link[href*="leaflet"]')) {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
         document.head.appendChild(link);
       }
-
-      // JS yükle
       if (!window.L) {
         const script = document.createElement('script');
         script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -39,143 +34,190 @@ const OrganizationMap = ({ organizations = [] }) => {
 
     const initializeMap = () => {
       if (mapRef.current && !mapInstance.current) {
-        // Türkiye merkezli harita
         mapInstance.current = window.L.map(mapRef.current).setView([39.9334, 32.8597], 6);
-
-        // Tile layer ekle
         window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors'
         }).addTo(mapInstance.current);
-
         setMapLoaded(true);
       }
     };
 
     loadLeaflet();
 
-    // Cleanup
     return () => {
       if (mapInstance.current) {
         mapInstance.current.remove();
         mapInstance.current = null;
-        markersRef.current = [];
+        layersRef.current = [];
         setMapLoaded(false);
       }
     };
   }, []);
 
-  // Organizasyonları konuma göre grupla
-  const groupOrganizationsByLocation = (organizations) => {
+  const groupOrganizationsByLocation = (items) => {
     const groups = {};
-    const tolerance = 0.001; // Yaklaşık 100 metre tolerans
-
-    organizations.forEach(org => {
+    const tolerance = 0.001; // ~100m
+    items.forEach(org => {
       const lat = parseFloat(org.latitude);
       const lng = parseFloat(org.longitude);
-      
       if (isNaN(lat) || isNaN(lng)) return;
 
-      // Mevcut grupları kontrol et
-      let foundGroup = false;
+      let foundKey = null;
       for (const key in groups) {
-        const [groupLat, groupLng] = key.split(',').map(parseFloat);
-        if (Math.abs(lat - groupLat) < tolerance && Math.abs(lng - groupLng) < tolerance) {
-          groups[key].push(org);
-          foundGroup = true;
+        const [gLat, gLng] = key.split(',').map(parseFloat);
+        if (Math.abs(lat - gLat) < tolerance && Math.abs(lng - gLng) < tolerance) {
+          foundKey = key;
           break;
         }
       }
-
-      // Yeni grup oluştur
-      if (!foundGroup) {
-        const key = `${lat},${lng}`;
-        groups[key] = [org];
-      }
+      const key = foundKey ?? `${lat},${lng}`;
+      groups[key] = groups[key] ? [...groups[key], org] : [org];
     });
-
     return groups;
   };
 
-  // Organizasyonları haritaya ekle
+  // Daire yayılımı (spoke)
+  const getMarkerOffset = (index, total) => {
+    if (total <= 1) return [0, 0];
+    const ringSize = 8;                       // bir halkada max 8 nokta
+    const ring = Math.floor(index / ringSize); // kaçıncı halka
+    const posInRing = index % ringSize;
+    const baseRadius = 0.00045;               // ~50 m
+    const radius = baseRadius + ring * 0.00018;
+    const angle = (2 * Math.PI * posInRing) / Math.min(total, ringSize);
+    const latOffset = radius * Math.cos(angle);
+    const lngOffset = radius * Math.sin(angle);
+    return [latOffset, lngOffset];
+  };
+
   useEffect(() => {
-    if (mapInstance.current && mapLoaded && organizations.length > 0) {
-      // Eski marker'ları temizle
-      markersRef.current.forEach(marker => {
-        mapInstance.current.removeLayer(marker);
-      });
-      markersRef.current = [];
+    if (!(mapInstance.current && mapLoaded)) return;
 
-      // Geçerli koordinatlara sahip organizasyonları filtrele
-      const validOrgs = organizations.filter(org => 
-        org.latitude && org.longitude && 
-        !isNaN(parseFloat(org.latitude)) && 
-        !isNaN(parseFloat(org.longitude))
-      );
+    // Eski layer’ları temizle
+    layersRef.current.forEach(layer => {
+      try { 
+        mapInstance.current.removeLayer(layer); 
+      } catch (error) {
+        // Ignore errors when removing layers
+      }
+    });
+    layersRef.current = [];
 
-      if (validOrgs.length === 0) return;
+    const validOrgs = organizations.filter(org =>
+      org?.latitude && org?.longitude &&
+      !isNaN(parseFloat(org.latitude)) &&
+      !isNaN(parseFloat(org.longitude))
+    );
+    if (validOrgs.length === 0) return;
 
-      // Organizasyonları konuma göre grupla
-      const locationGroups = groupOrganizationsByLocation(validOrgs);
+    const locationGroups = groupOrganizationsByLocation(validOrgs);
 
-      // Her grup için marker ekle
-      Object.entries(locationGroups).forEach(([locationKey, orgsInLocation]) => {
-        const [lat, lng] = locationKey.split(',').map(parseFloat);
-        const orgCount = orgsInLocation.length;
+    Object.entries(locationGroups).forEach(([locationKey, orgsInLocation]) => {
+      const [baseLat, baseLng] = locationKey.split(',').map(parseFloat);
+      const orgCount = orgsInLocation.length;
 
-        // Grup için marker ikonu oluştur
-        let markerHtml, iconSize;
-        
-        if (orgCount === 1) {
-          // Tek organizasyon
-          const org = orgsInLocation[0];
-          markerHtml = `
-            <div class="organization-marker single">
+      if (orgCount === 1) {
+        const org = orgsInLocation[0];
+
+        const markerHtml = `
+          <div class="organization-marker single">
+            <div class="marker-pin">
+              <span class="material-symbols-outlined">location_on</span>
+            </div>
+            <div class="marker-price">${formatPrice(org.price)}</div>
+          </div>
+        `;
+        const customIcon = window.L.divIcon({
+          html: markerHtml,
+          className: 'custom-marker',
+          iconSize: [60, 80],
+          iconAnchor: [30, 80],
+          popupAnchor: [0, -80]
+        });
+
+        const marker = window.L.marker([baseLat, baseLng], { icon: customIcon, zIndexOffset: 0 })
+          .addTo(mapInstance.current);
+
+        const popupContent = `
+          <div class="organization-popup single">
+            <div class="popup-image">
+              <img src="${getImageUrl(org.coverPhotoPath)}" alt="${org.title}"
+                   onerror="this.src='https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=300&q=80'" />
+            </div>
+            <div class="popup-content">
+              <h3 class="popup-title">${org.title || 'Başlık Yok'}</h3>
+              <div class="popup-location">
+                <span class="material-symbols-outlined">location_on</span>
+                <span>${org.cityName || 'Şehir'}, ${org.districtName || 'İlçe'}</span>
+              </div>
+              <div class="popup-price">${formatPrice(org.price)}</div>
+              <div class="popup-actions">
+                <a href="/organization/${org.id}" class="popup-button">
+                  <span class="material-symbols-outlined">visibility</span>
+                  Detayları Gör
+                </a>
+              </div>
+            </div>
+          </div>
+        `;
+        marker.bindPopup(popupContent, { maxWidth: 300, className: 'organization-popup-container' });
+        marker.on('click', () => { setSelectedOrg(org); marker.setZIndexOffset(1000); });
+        marker.on('popupclose', () => marker.setZIndexOffset(0));
+
+        layersRef.current.push(marker);
+      } else {
+        // HUB: merkez nokta (küçük daire)
+        const hub = window.L.circleMarker([baseLat, baseLng], {
+          radius: 5,
+          color: '#fb923c',        // turuncu kontur
+          weight: 2,
+          fillColor: '#fde68a',    // açık sarı iç
+          fillOpacity: 0.9,
+          pane: 'markerPane'
+        }).addTo(mapInstance.current);
+        layersRef.current.push(hub);
+
+        // Her organizasyon için spoke + marker
+        orgsInLocation.forEach((org, index) => {
+          const [latOffset, lngOffset] = getMarkerOffset(index, orgCount);
+          const markerLat = baseLat + latOffset;
+          const markerLng = baseLng + lngOffset;
+
+          // “ip/hat”
+          const line = window.L.polyline(
+            [[baseLat, baseLng], [markerLat, markerLng]],
+            {
+              color: '#fb923c',     // turuncu
+              weight: 2,
+              opacity: 0.6,
+              bubblingMouseEvents: false
+            }
+          ).addTo(mapInstance.current);
+
+          const markerHtml = `
+            <div class="organization-marker small">
               <div class="marker-pin">
                 <span class="material-symbols-outlined">location_on</span>
               </div>
               <div class="marker-price">${formatPrice(org.price)}</div>
             </div>
           `;
-          iconSize = [60, 80];
-        } else {
-          // Çoklu organizasyon - cluster
-          const minPrice = Math.min(...orgsInLocation.map(org => org.price || 0));
-          const maxPrice = Math.max(...orgsInLocation.map(org => org.price || 0));
-          markerHtml = `
-            <div class="organization-marker cluster">
-              <div class="marker-cluster">
-                <span class="cluster-count">${orgCount}</span>
-              </div>
-              <div class="marker-price-range">
-                ${minPrice === maxPrice ? formatPrice(minPrice) : `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`}
-              </div>
-            </div>
-          `;
-          iconSize = [80, 100];
-        }
+          const customIcon = window.L.divIcon({
+            html: markerHtml,
+            className: 'custom-marker',
+            iconSize: [40, 55],
+            iconAnchor: [20, 55],
+            popupAnchor: [0, -55]
+          });
 
-        const customIcon = window.L.divIcon({
-          html: markerHtml,
-          className: 'custom-marker',
-          iconSize: iconSize,
-          iconAnchor: [iconSize[0]/2, iconSize[1]],
-          popupAnchor: [0, -iconSize[1]]
-        });
+          const marker = window.L.marker([markerLat, markerLng], { icon: customIcon, zIndexOffset: 0 })
+            .addTo(mapInstance.current);
 
-        // Marker oluştur
-        const marker = window.L.marker([lat, lng], { icon: customIcon })
-          .addTo(mapInstance.current);
-
-        // Popup içeriği - tek veya çoklu organizasyon
-        let popupContent;
-        
-        if (orgCount === 1) {
-          const org = orgsInLocation[0];
-          popupContent = `
+          const popupContent = `
             <div class="organization-popup single">
               <div class="popup-image">
-                <img src="${getImageUrl(org.coverPhotoPath)}" alt="${org.title}" 
-                     onerror="this.src='https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80'" />
+                <img src="${getImageUrl(org.coverPhotoPath)}" alt="${org.title}"
+                     onerror="this.src='https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=150&q=80'" />
               </div>
               <div class="popup-content">
                 <h3 class="popup-title">${org.title || 'Başlık Yok'}</h3>
@@ -193,75 +235,47 @@ const OrganizationMap = ({ organizations = [] }) => {
               </div>
             </div>
           `;
-        } else {
-          // Çoklu organizasyon listesi
-          const orgList = orgsInLocation.map(org => `
-            <div class="popup-org-item">
-              <div class="popup-org-image">
-                <img src="${getImageUrl(org.coverPhotoPath)}" alt="${org.title}" 
-                     onerror="this.src='https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'" />
-              </div>
-              <div class="popup-org-info">
-                <h4 class="popup-org-title">${org.title || 'Başlık Yok'}</h4>
-                <div class="popup-org-price">${formatPrice(org.price)}</div>
-                <a href="/organization/${org.id}" class="popup-org-button">
-                  <span class="material-symbols-outlined">visibility</span>
-                  Detay
-                </a>
-              </div>
-            </div>
-          `).join('');
+          marker.bindPopup(popupContent, { maxWidth: 300, className: 'organization-popup-container' });
 
-          popupContent = `
-            <div class="organization-popup cluster">
-              <div class="popup-header">
-                <h3 class="popup-cluster-title">Bu Konumda ${orgCount} Organizasyon</h3>
-                <div class="popup-location">
-                  <span class="material-symbols-outlined">location_on</span>
-                  <span>${orgsInLocation[0].cityName || 'Şehir'}, ${orgsInLocation[0].districtName || 'İlçe'}</span>
-                </div>
-              </div>
-              <div class="popup-org-list">
-                ${orgList}
-              </div>
-            </div>
-          `;
-        }
+          // Hover/Focus efektleri
+          const emphasize = () => { line.setStyle({ weight: 3, opacity: 0.9 }); marker.setZIndexOffset(1200); };
+          const deemphasize = () => { line.setStyle({ weight: 2, opacity: 0.6 }); marker.setZIndexOffset(0); };
 
-        marker.bindPopup(popupContent, {
-          maxWidth: orgCount === 1 ? 300 : 400,
-          className: 'organization-popup-container'
+          marker.on('mouseover', emphasize);
+          marker.on('mouseout', deemphasize);
+          marker.on('click', () => { setSelectedOrg(org); emphasize(); });
+          marker.on('popupclose', deemphasize);
+
+          layersRef.current.push(line, marker);
         });
+      }
+    });
 
-        // Marker tıklama olayı
-        marker.on('click', () => {
-          if (orgCount === 1) {
-            setSelectedOrg(orgsInLocation[0]);
+    // Görüş alanı
+    const onlyMarkers = layersRef.current.filter(l => l?.getLatLng); // polyline’ları atla (getBounds farklı)
+    if (onlyMarkers.length > 1) {
+      try {
+        const group = new window.L.featureGroup(onlyMarkers);
+        // Check if group is properly created and has getBounds method before using it
+        if (group && typeof group.getBounds === 'function') {
+          const bounds = group.getBounds();
+          if (bounds && bounds.isValid()) {
+            mapInstance.current.fitBounds(bounds.pad(0.1));
+          } else {
+            mapInstance.current.setView([39.9334, 32.8597], 6);
           }
-        });
-
-        markersRef.current.push(marker);
-      });
-
-      // Haritayı tüm marker'ları gösterecek şekilde ayarla
-      if (markersRef.current.length > 1) {
-        try {
-          const group = new window.L.featureGroup(markersRef.current);
-          mapInstance.current.fitBounds(group.getBounds().pad(0.1));
-        } catch (error) {
-          console.warn('Harita bounds ayarlanamadı:', error);
-          // Fallback: Türkiye merkezine odaklan
+        } else {
           mapInstance.current.setView([39.9334, 32.8597], 6);
         }
-      } else if (markersRef.current.length === 1) {
-        const firstGroup = Object.values(locationGroups)[0];
-        const org = firstGroup[0];
-        mapInstance.current.setView([parseFloat(org.latitude), parseFloat(org.longitude)], 12);
+      } catch (error) {
+        mapInstance.current.setView([39.9334, 32.8597], 6);
       }
+    } else if (onlyMarkers.length === 1) {
+      const ll = onlyMarkers[0].getLatLng();
+      mapInstance.current.setView([ll.lat, ll.lng], 12);
     }
   }, [organizations, mapLoaded]);
 
-  // Haritayı yeniden boyutlandır
   useEffect(() => {
     if (mapInstance.current) {
       setTimeout(() => {
@@ -272,7 +286,7 @@ const OrganizationMap = ({ organizations = [] }) => {
 
   return (
     <div className="space-y-4">
-      {/* Harita Başlığı */}
+      {/* Başlık */}
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-bold text-content-light dark:text-content-dark">
           Organizasyonlar Haritası
@@ -283,13 +297,9 @@ const OrganizationMap = ({ organizations = [] }) => {
         </div>
       </div>
 
-      {/* Harita Container */}
+      {/* Harita */}
       <div className="relative w-full h-96 rounded-lg border border-border-light dark:border-border-dark overflow-hidden">
-        <div 
-          ref={mapRef}
-          className="w-full h-full"
-        />
-        
+        <div ref={mapRef} className="w-full h-full" />
         {!mapLoaded && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
             <div className="text-center">
@@ -300,16 +310,17 @@ const OrganizationMap = ({ organizations = [] }) => {
         )}
       </div>
 
-      {/* Harita Stilleri */}
+      {/* Stiller */}
       <style>{`
         .organization-marker {
           position: relative;
           display: flex;
           flex-direction: column;
           align-items: center;
+          will-change: transform;
         }
-        
-        /* Tek organizasyon marker'ı */
+
+        /* Tek marker (kırmızı) */
         .organization-marker.single .marker-pin {
           background: #ef4444;
           color: white;
@@ -323,32 +334,43 @@ const OrganizationMap = ({ organizations = [] }) => {
           border: 2px solid white;
           box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
-        
         .organization-marker.single .marker-pin .material-symbols-outlined {
           transform: rotate(45deg);
           font-size: 16px;
         }
-        
-        /* Cluster marker'ı */
-        .organization-marker.cluster .marker-cluster {
-          background: #2563eb;
+
+        /* Çoklu durumda küçük marker (turuncu) */
+        .organization-marker.small .marker-pin {
+          background: #f97316;
           color: white;
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
+          border-radius: 50% 50% 50% 0;
+          width: 25px;
+          height: 25px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 3px solid white;
-          box-shadow: 0 3px 12px rgba(0,0,0,0.4);
+          transform: rotate(-45deg);
+          border: 2px solid white;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.3);
         }
-        
-        .cluster-count {
-          font-size: 14px;
+        .organization-marker.small .marker-pin .material-symbols-outlined {
+          transform: rotate(45deg);
+          font-size: 12px;
+        }
+        .organization-marker.small .marker-price {
+          background: white;
+          color: #f97316;
+          padding: 1px 3px;
+          border-radius: 8px;
+          font-size: 8px;
           font-weight: bold;
+          margin-top: 1px;
+          border: 1px solid #f97316;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+          white-space: nowrap;
         }
-        
-        .marker-price, .marker-price-range {
+
+        .marker-price {
           background: white;
           color: #ef4444;
           padding: 2px 6px;
@@ -360,97 +382,30 @@ const OrganizationMap = ({ organizations = [] }) => {
           box-shadow: 0 1px 4px rgba(0,0,0,0.2);
           white-space: nowrap;
         }
-        
-        .marker-price-range {
-          color: #2563eb;
-          border-color: #2563eb;
-        }
-        
-        .organization-popup {
-          width: 280px;
-        }
-        
-        .popup-image {
-          width: 100%;
-          height: 120px;
-          overflow: hidden;
-          border-radius: 8px 8px 0 0;
-        }
-        
-        .popup-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        
-        .popup-content {
-          padding: 12px;
-        }
-        
-        .popup-title {
-          font-size: 16px;
-          font-weight: bold;
-          color: #1f2937;
-          margin-bottom: 8px;
-          line-height: 1.2;
-        }
-        
-        .popup-location {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          color: #6b7280;
-          font-size: 14px;
-          margin-bottom: 8px;
-        }
-        
-        .popup-location .material-symbols-outlined {
-          font-size: 16px;
-        }
-        
-        .popup-price {
-          font-size: 18px;
-          font-weight: bold;
-          color: #ef4444;
-          margin-bottom: 12px;
-        }
-        
-        .popup-button {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          background: #ef4444;
-          color: white;
-          padding: 8px 16px;
-          border-radius: 6px;
-          text-decoration: none;
-          font-size: 14px;
-          font-weight: 500;
-          transition: background-color 0.2s;
-        }
-        
-        .popup-button:hover {
-          background: #dc2626;
-        }
-        
-        .popup-button .material-symbols-outlined {
-          font-size: 16px;
-        }
+
+        .organization-popup { width: 280px; }
+        .popup-image { width: 100%; height: 120px; overflow: hidden; border-radius: 8px 8px 0 0; }
+        .popup-image img { width: 100%; height: 100%; object-fit: cover; }
+        .popup-content { padding: 12px; }
+        .popup-title { font-size: 16px; font-weight: bold; color: #1f2937; margin-bottom: 8px; line-height: 1.2; }
+        .popup-location { display: flex; align-items: center; gap: 4px; color: #6b7280; font-size: 14px; margin-bottom: 8px; }
+        .popup-location .material-symbols-outlined { font-size: 16px; }
+        .popup-price { font-size: 18px; font-weight: bold; color: #ef4444; margin-bottom: 12px; }
+        .popup-button { display: inline-flex; align-items: center; gap: 6px; background: #ef4444; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; transition: background-color 0.2s; }
+        .popup-button:hover { background: #dc2626; }
       `}</style>
 
-      {/* Harita Bilgilendirme */}
+      {/* Bilgilendirme */}
       <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
         <div className="flex items-start gap-3">
           <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-sm mt-0.5">info</span>
           <div className="text-sm">
-            <p className="text-blue-800 dark:text-blue-200 font-medium mb-2">
-              Harita Kullanım Rehberi:
-            </p>
+            <p className="text-blue-800 dark:text-blue-200 font-medium mb-2">Harita Kullanım Rehberi:</p>
             <ul className="text-blue-700 dark:text-blue-300 space-y-1">
-              <li>• Kırmızı pin'lere tıklayarak organizasyon detaylarını görün</li>
-              <li>• Pin'lerin altındaki fiyat etiketleri ile hızlıca karşılaştırma yapın</li>
-              <li>• Popup'ta "Detayları Gör" butonuna tıklayarak organizasyon sayfasına gidin</li>
-              <li>• Haritayı zoom yaparak daha detaylı görüntüleyin</li>
+              <li>• Aynı lokasyondaki seçenekler merkez hub’dan “iplerle” gösterilir</li>
+              <li>• Marker üzerine gelince ilgili ip vurgulanır</li>
+              <li>• “Detayları Gör” ile organizasyon sayfasına gidin</li>
+              <li>• Yakınlaştırıp uzaklaştırarak daha detaylı görüntüleyin</li>
             </ul>
           </div>
         </div>

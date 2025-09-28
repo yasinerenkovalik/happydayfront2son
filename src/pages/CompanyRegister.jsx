@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { getApiUrl } from '../utils/api'
+import { useCities, useDistricts } from '../hooks/useFilterData'
 
 const CompanyRegister = () => {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { cities, loading: citiesLoading } = useCities()
+  const [selectedCityId, setSelectedCityId] = useState('')
+  const { districts, loading: districtsLoading } = useDistricts(selectedCityId)
 
   const [formData, setFormData] = useState({
     token: '',
@@ -13,7 +17,9 @@ const CompanyRegister = () => {
     companyName: '',
     adress: '',
     phoneNumber: '',
-    description: ''
+    description: '',
+    cityId: '',
+    districtId: ''
   })
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -36,7 +42,7 @@ const CompanyRegister = () => {
         // Eğer JSON string ise parse et
         const parsed = JSON.parse(rawToken)
         actualToken = parsed.token || rawToken
-      } catch (e) {
+      } catch {
         // JSON değilse direkt kullan
         actualToken = rawToken
       }
@@ -53,11 +59,44 @@ const CompanyRegister = () => {
     }
   }, [searchParams])
 
+  // Update cityId and districtId when selections change
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      cityId: selectedCityId
+    }))
+  }, [selectedCityId])
+
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      districtId: prev.districtId
+    }))
+  }, [districts])
+
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     })
+  }
+
+  const handleCityChange = (e) => {
+    const cityId = e.target.value
+    setSelectedCityId(cityId)
+    // Reset district when city changes
+    setFormData(prev => ({
+      ...prev,
+      cityId: cityId,
+      districtId: ''
+    }))
+  }
+
+  const handleDistrictChange = (e) => {
+    setFormData(prev => ({
+      ...prev,
+      districtId: e.target.value
+    }))
   }
 
   const validateForm = () => {
@@ -79,6 +118,14 @@ const CompanyRegister = () => {
     }
     if (!formData.phoneNumber) {
       setError('Telefon numarası gereklidir.')
+      return false
+    }
+    if (!formData.cityId) {
+      setError('Şehir seçimi gereklidir.')
+      return false
+    }
+    if (!formData.districtId) {
+      setError('İlçe seçimi gereklidir.')
       return false
     }
     return true
@@ -103,7 +150,9 @@ const CompanyRegister = () => {
         companyName: formData.companyName,
         adress: formData.adress,
         phoneNumber: formData.phoneNumber,
-        description: formData.description
+        description: formData.description,
+        cityId: parseInt(formData.cityId, 10),
+        districtId: parseInt(formData.districtId, 10)
       }
 
       console.log('Sending registration request:', requestData)
@@ -291,6 +340,65 @@ const CompanyRegister = () => {
                 placeholder="Şirket adresi"
                 disabled={loading}
               />
+            </div>
+
+            {/* City Selection */}
+            <div>
+              <label htmlFor="citySelect" className="block text-sm font-medium text-content-light dark:text-content-dark mb-2">
+                Şehir
+              </label>
+              <select
+                id="citySelect"
+                value={selectedCityId}
+                onChange={handleCityChange}
+                className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark focus:ring-2 focus:ring-primary focus:border-transparent"
+                disabled={loading || citiesLoading}
+              >
+                <option value="">Şehir Seçin</option>
+                {citiesLoading ? (
+                  <option value="">Yükleniyor...</option>
+                ) : (
+                  cities.map(city => (
+                    <option key={city.id} value={city.id}>
+                      {city.cityName}
+                    </option>
+                  ))
+                )}
+              </select>
+              {citiesLoading && (
+                <p className="mt-1 text-sm text-subtle-light dark:text-subtle-dark">Şehirler yükleniyor...</p>
+              )}
+            </div>
+
+            {/* District Selection */}
+            <div>
+              <label htmlFor="districtSelect" className="block text-sm font-medium text-content-light dark:text-content-dark mb-2">
+                İlçe
+              </label>
+              <select
+                id="districtSelect"
+                value={formData.districtId}
+                onChange={handleDistrictChange}
+                className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark focus:ring-2 focus:ring-primary focus:border-transparent"
+                disabled={loading || districtsLoading || !selectedCityId}
+              >
+                <option value="">İlçe Seçin</option>
+                {districtsLoading ? (
+                  <option value="">Yükleniyor...</option>
+                ) : (
+                  districts.map(district => (
+                    <option key={district.id} value={district.id}>
+                      {district.districtName}
+                    </option>
+                  ))
+                )}
+              </select>
+              {!selectedCityId && (
+                <p className="mt-1 text-sm text-subtle-light dark:text-subtle-dark">İlçe seçmek için önce bir şehir seçin</p>
+              )}
+              {districtsLoading && selectedCityId && (
+                <p className="mt-1 text-sm text-subtle-light dark:text-subtle-dark">İlçeler yükleniyor...</p>
+              )}
             </div>
 
             {/* Description */}
