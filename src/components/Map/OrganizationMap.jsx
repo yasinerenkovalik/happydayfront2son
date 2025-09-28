@@ -320,10 +320,10 @@ const OrganizationMap = ({ organizations = [] }) => {
           will-change: transform;
         }
 
-        /* Tek marker (kırmızı) */
+        /* Tek marker (primary renk) */
         .organization-marker.single .marker-pin {
-          background: #ef4444;
-          color: white;
+          background: #F8BBD0;
+          color: #2D2D2D;
           border-radius: 50% 50% 50% 0;
           width: 30px;
           height: 30px;
@@ -372,13 +372,13 @@ const OrganizationMap = ({ organizations = [] }) => {
 
         .marker-price {
           background: white;
-          color: #ef4444;
+          color: #F8BBD0;
           padding: 2px 6px;
           border-radius: 12px;
           font-size: 10px;
           font-weight: bold;
           margin-top: 2px;
-          border: 1px solid #ef4444;
+          border: 1px solid #F8BBD0;
           box-shadow: 0 1px 4px rgba(0,0,0,0.2);
           white-space: nowrap;
         }
@@ -390,9 +390,9 @@ const OrganizationMap = ({ organizations = [] }) => {
         .popup-title { font-size: 16px; font-weight: bold; color: #1f2937; margin-bottom: 8px; line-height: 1.2; }
         .popup-location { display: flex; align-items: center; gap: 4px; color: #6b7280; font-size: 14px; margin-bottom: 8px; }
         .popup-location .material-symbols-outlined { font-size: 16px; }
-        .popup-price { font-size: 18px; font-weight: bold; color: #ef4444; margin-bottom: 12px; }
-        .popup-button { display: inline-flex; align-items: center; gap: 6px; background: #ef4444; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; transition: background-color 0.2s; }
-        .popup-button:hover { background: #dc2626; }
+        .popup-price { font-size: 18px; font-weight: bold; color: #F8BBD0; margin-bottom: 12px; }
+        .popup-button { display: inline-flex; align-items: center; gap: 6px; background: #F8BBD0; color: #2D2D2D; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; transition: background-color 0.2s; }
+        .popup-button:hover { background: #F5E6CC; }
       `}</style>
 
       {/* Bilgilendirme */}

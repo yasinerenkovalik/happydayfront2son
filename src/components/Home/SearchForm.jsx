@@ -20,10 +20,10 @@ const SearchForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    
+
     // Form verilerini URL parametrelerine çevir
     const searchParams = new URLSearchParams()
-    
+
     if (formData.city) {
       searchParams.set('cityId', formData.city)
     }
@@ -33,13 +33,13 @@ const SearchForm = () => {
     if (formData.venueType) {
       searchParams.set('categoryId', formData.venueType)
     }
-    
+
     // Konum bilgileri varsa ekle
     if (selectedLocation.lat && selectedLocation.lng) {
       searchParams.set('lat', selectedLocation.lat.toString())
       searchParams.set('lng', selectedLocation.lng.toString())
     }
-    
+
     // Services sayfasına yönlendir
     const queryString = searchParams.toString()
     navigate(`/services${queryString ? `?${queryString}` : ''}`)
@@ -47,18 +47,18 @@ const SearchForm = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    
+
     setFormData(prev => {
       const newData = {
         ...prev,
         [name]: value
       }
-      
+
       // Şehir değiştiğinde ilçeyi sıfırla
       if (name === 'city') {
         newData.district = ''
       }
-      
+
       return newData
     })
   }
@@ -135,7 +135,7 @@ const SearchForm = () => {
         </div>
 
         <div className="flex gap-1">
-         
+
           <button
             type="submit"
             className="bg-primary text-white font-bold px-4 py-3 rounded-full shrink-0 hover:bg-primary/90 transition-colors w-full"
@@ -162,7 +162,7 @@ const SearchForm = () => {
                   <span className="material-symbols-outlined">close</span>
                 </button>
               </div>
-              
+
               <SimpleLocationPicker
                 latitude={selectedLocation.lat}
                 longitude={selectedLocation.lng}

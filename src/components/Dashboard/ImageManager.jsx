@@ -26,7 +26,7 @@ const ImageManager = ({ organizationId, currentImages, onImagesUpdated }) => {
     try {
       setUploading(true)
       setError('')
-      
+
       const uploadPromises = newImages.map(async (image) => {
         const formData = new FormData()
         formData.append('OrganizationId', organizationId)
@@ -54,22 +54,22 @@ const ImageManager = ({ organizationId, currentImages, onImagesUpdated }) => {
       })
 
       await Promise.all(uploadPromises)
-      
+
       setSuccess(`${newImages.length} resim başarıyla yüklendi!`)
       setNewImages([])
-      
+
       // File input'u temizle
       const fileInput = document.getElementById('imageUpload')
       if (fileInput) fileInput.value = ''
-      
+
       // Parent component'i bilgilendir
       if (onImagesUpdated) {
         onImagesUpdated()
       }
-      
+
       // 3 saniye sonra success mesajını temizle
       setTimeout(() => setSuccess(''), 3000)
-      
+
     } catch (err) {
       setError(err.message)
     } finally {
@@ -89,7 +89,7 @@ const ImageManager = ({ organizationId, currentImages, onImagesUpdated }) => {
     try {
       setDeleting(imageId)
       setError('')
-      
+
       const response = await fetch(getApiUrl(`/OrganizationImages/DeleteOrganizationImages/${imageId}`), {
         method: 'DELETE',
         headers: {
@@ -105,12 +105,12 @@ const ImageManager = ({ organizationId, currentImages, onImagesUpdated }) => {
       const result = await response.json()
       if (result.isSuccess) {
         setSuccess('Resim başarıyla silindi!')
-        
+
         // Parent component'i bilgilendir
         if (onImagesUpdated) {
           onImagesUpdated()
         }
-        
+
         // 3 saniye sonra success mesajını temizle
         setTimeout(() => setSuccess(''), 3000)
       } else {
@@ -140,7 +140,7 @@ const ImageManager = ({ organizationId, currentImages, onImagesUpdated }) => {
                 e.target.src = 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'
               }}
             />
-            
+
             {/* Kapak Fotoğrafı Bilgisi */}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
               <p className="text-white text-sm font-medium">Kapak Fotoğrafı</p>
@@ -167,7 +167,7 @@ const ImageManager = ({ organizationId, currentImages, onImagesUpdated }) => {
                     e.target.src = 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80'
                   }}
                 />
-                
+
                 {/* Silme Butonu */}
                 {image.id && (
                   <button
@@ -183,7 +183,7 @@ const ImageManager = ({ organizationId, currentImages, onImagesUpdated }) => {
                     )}
                   </button>
                 )}
-                
+
                 {/* Yükleme Overlay */}
                 {deleting === image.id && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -201,7 +201,7 @@ const ImageManager = ({ organizationId, currentImages, onImagesUpdated }) => {
         <h3 className="text-lg font-semibold text-content-light dark:text-content-dark mb-4">
           Yeni Resimler Ekle
         </h3>
-        
+
         {/* Success Message */}
         {success && (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded-lg mb-4">

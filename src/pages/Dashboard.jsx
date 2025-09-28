@@ -4,10 +4,13 @@ import CompanyProfile from '../components/Dashboard/CompanyProfile'
 import OrganizationList from '../components/Dashboard/OrganizationList'
 import AddOrganization from '../components/Dashboard/AddOrganization'
 import ImageManagerPage from '../components/Dashboard/ImageManagerPage'
+import AdminInvitations from '../components/Dashboard/AdminInvitations'
+import AdminOrganizationList from '../components/Dashboard/AdminOrganizationList'
+import AdminAddOrganization from '../components/Dashboard/AdminAddOrganization'
 
 const Dashboard = () => {
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState('organizations')
+  const [activeTab, setActiveTab] = useState(user?.role === 'admin' ? 'admin-invitations' : 'organizations')
   const [showEmailWarning, setShowEmailWarning] = useState(true)
   const [resendingEmail, setResendingEmail] = useState(false)
 
@@ -27,17 +30,25 @@ const Dashboard = () => {
     }
   }
 
-  const tabs = [
+  const tabs = user?.role === 'admin' ? [
+    { id: 'admin-invitations', name: 'Davet Linki Oluştur', icon: 'add_link' },
+    { id: 'organizations', name: 'Tüm Organizasyonlar', icon: 'event' },
+    { id: 'admin-add-organization', name: 'Organizasyon Ekle', icon: 'add_business' },
+    { id: 'profile', name: 'Admin Profili', icon: 'admin_panel_settings' }
+  ] : [
     { id: 'organizations', name: 'Organizasyonlarım', icon: 'event' },
     { id: 'add-organization', name: 'Organizasyon Ekle', icon: 'add_circle' },
-    { id: 'image-manager', name: 'Resim Yönetimi', icon: 'photo_library' },
     { id: 'profile', name: 'Şirket Profili', icon: 'business' }
   ]
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'admin-invitations':
+        return <AdminInvitations />
       case 'organizations':
-        return <OrganizationList />
+        return user?.role === 'admin' ? <AdminOrganizationList /> : <OrganizationList />
+      case 'admin-add-organization':
+        return <AdminAddOrganization />
       case 'add-organization':
         return <AddOrganization />
       case 'image-manager':
@@ -45,7 +56,7 @@ const Dashboard = () => {
       case 'profile':
         return <CompanyProfile />
       default:
-        return <OrganizationList />
+        return user?.role === 'admin' ? <AdminInvitations /> : <OrganizationList />
     }
   }
 
@@ -56,9 +67,14 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-content-light dark:text-content-dark">
-                Şirket Paneli
-              </h1>
+              <div className="flex items-center gap-3">
+                <span className={`material-symbols-outlined text-2xl ${user?.role === 'admin' ? 'text-red-600' : 'text-primary'}`}>
+                  {user?.role === 'admin' ? 'admin_panel_settings' : 'business'}
+                </span>
+                <h1 className="text-2xl font-bold text-content-light dark:text-content-dark">
+                  {user?.role === 'admin' ? 'Admin Paneli' : 'Şirket Paneli'}
+                </h1>
+              </div>
               <p className="text-subtle-light dark:text-subtle-dark mt-1">
                 Hoş geldiniz, {user?.email}
               </p>

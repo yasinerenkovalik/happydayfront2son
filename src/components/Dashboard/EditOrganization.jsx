@@ -21,11 +21,13 @@ const EditOrganization = ({ organizationId, onClose, onUpdate }) => {
     categoryId: '',
     isOutdoor: false,
     coverPhoto: null,
-    services: '',
+    services: [],
     cancelPolicy: '',
     reservationNote: '',
     videoUrl: ''
   })
+
+  const [newService, setNewService] = useState('')
 
   const [currentImages, setCurrentImages] = useState({
     coverPhoto: null,
@@ -64,6 +66,21 @@ const EditOrganization = ({ organizationId, onClose, onUpdate }) => {
       const result = await response.json()
       if (result.isSuccess && result.data) {
         const org = result.data
+        // Services'i parse et - string ise JSON parse et, array ise direkt kullan
+        let parsedServices = []
+        if (org.services) {
+          if (typeof org.services === 'string') {
+            try {
+              parsedServices = JSON.parse(org.services)
+            } catch (e) {
+              // JSON parse edilemezse virgülle ayır
+              parsedServices = org.services.split(',').map(s => s.trim()).filter(s => s)
+            }
+          } else if (Array.isArray(org.services)) {
+            parsedServices = org.services
+          }
+        }
+
         setFormData({
           id: org.id,
           title: org.title || '',
@@ -74,7 +91,7 @@ const EditOrganization = ({ organizationId, onClose, onUpdate }) => {
           categoryId: org.categoryId || '',
           isOutdoor: org.isOutdoor || false,
           coverPhoto: null, // Yeni dosya seçilmediği sürece null
-          services: org.services || '',
+          services: parsedServices,
           cancelPolicy: org.cancelPolicy || '',
           reservationNote: org.reservationNote || '',
           videoUrl: org.videoUrl || ''
@@ -138,7 +155,12 @@ const EditOrganization = ({ organizationId, onClose, onUpdate }) => {
       submitData.append('IsOutdoor', formData.isOutdoor)
 
       // Opsiyonel alanlar
-      submitData.append('Services', formData.services || '')
+      // Hizmetleri JSON string olarak gönder
+      if (formData.services && formData.services.length > 0) {
+        submitData.append('Services', JSON.stringify(formData.services))
+      } else {
+        submitData.append('Services', '')
+      }
       submitData.append('CancelPolicy', formData.cancelPolicy || '')
       submitData.append('ReservationNote', formData.reservationNote || '')
       submitData.append('VideoUrl', formData.videoUrl || '')
@@ -358,19 +380,85 @@ const EditOrganization = ({ organizationId, onClose, onUpdate }) => {
 
               {/* Hizmetler */}
               <div className="md:col-span-2">
-                <label htmlFor="services" className="block text-sm font-medium text-content-light dark:text-content-dark mb-2">
+                <label className="block text-sm font-medium text-content-light dark:text-content-dark mb-2">
                   Hizmetler
                 </label>
-                <textarea
-                  id="services"
-                  name="services"
-                  rows={3}
-                  value={formData.services}
-                  onChange={handleChange}
-                  disabled={saving}
-                  className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
-                  placeholder="Sunduğunuz hizmetleri açıklayın (opsiyonel)"
-                />
+                
+                {/* Hizmet Ekleme */}
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={newService}
+                    onChange={(e) => setNewService(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        if (newService.trim() && !formData.services.includes(newService.trim())) {
+                          setFormData(prev => ({
+                            ...prev,
+                            services: [...prev.services, newService.trim()]
+                          }))
+                          setNewService('')
+                        }
+                      }
+                    }}
+                    disabled={saving}
+                    className="flex-1 px-3 py-2 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+                    placeholder="Hizmet adı girin ve Enter'a basın"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newService.trim() && !formData.services.includes(newService.trim())) {
+                        setFormData(prev => ({
+                          ...prev,
+                          services: [...prev.services, newService.trim()]
+                        }))
+                        setNewService('')
+                      }
+                    }}
+                    disabled={saving || !newService.trim()}
+                    className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">add</span>
+                  </button>
+                </div>
+
+                {/* Hizmet Listesi */}
+                {formData.services.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-subtle-light dark:text-subtle-dark">
+                      Eklenen hizmetler ({formData.services.length} adet):
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.services.map((service, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm"
+                        >
+                          <span>{service}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                services: prev.services.filter((_, i) => i !== index)
+                              }))
+                            }}
+                            disabled={saving}
+                            className="hover:bg-primary/20 rounded-full p-1 transition-colors disabled:opacity-50"
+                          >
+                            <span className="material-symbols-outlined text-xs">close</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <p className="text-xs text-subtle-light dark:text-subtle-dark mt-2">
+                  Sunduğunuz hizmetleri tek tek ekleyin. Her hizmeti yazdıktan sonra Enter'a basın veya + butonuna tıklayın.
+                </p>
               </div>
 
               {/* İptal Politikası */}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import useOrganizations from '../hooks/useOrganizations'
 import { useCities, useDistricts, useCategories } from '../hooks/useFilterData'
@@ -20,7 +20,9 @@ const Services = () => {
   const [sortBy, setSortBy] = useState('Popülerliğe Göre')
   const [currentPage, setCurrentPage] = useState(1)
   const [viewMode, setViewMode] = useState('grid') // 'grid' veya 'map'
-  const pageSize = 6
+
+  // Görünüm moduna göre farklı pageSize kullan
+  const pageSize = viewMode === 'grid' ? 6 : 1000
 
   // Debouncing için useEffect
   useEffect(() => {
@@ -32,7 +34,21 @@ const Services = () => {
   }, [filters])
 
   // API hook'ları - debounced filters kullan
-  const { organizations, loading, error, totalCount } = useOrganizations(currentPage, pageSize, debouncedFilters)
+  const { organizations, loading, error, totalCount } = useOrganizations(
+    viewMode === 'grid' ? currentPage : 1,
+    pageSize,
+    debouncedFilters
+  )
+
+  // Debug için
+  console.log('Debug:', {
+    viewMode,
+    currentPage,
+    pageSize,
+    totalCount,
+    organizationsLength: organizations.length,
+    shouldShowPagination: viewMode === 'grid' && Math.ceil(totalCount / pageSize) > 1
+  })
   const { cities } = useCities()
   const { districts } = useDistricts(filters.cityId)
   const { categories } = useCategories()
@@ -68,8 +84,8 @@ const Services = () => {
       return newFilters
     })
 
-    // Filtre değiştiğinde sayfa 1'e dön (sadece debounced filters değiştiğinde)
-    if (filterType !== 'maxPrice') {
+    // Liste görünümünde filtre değiştiğinde sayfa 1'e dön
+    if (viewMode === 'grid' && filterType !== 'maxPrice') {
       setCurrentPage(1)
     }
   }
@@ -295,6 +311,11 @@ const Services = () => {
               <div className="flex flex-col sm:flex-row items-center justify-between mb-8">
                 <p className="text-subtle-light dark:text-subtle-dark mb-4 sm:mb-0">
                   {totalCount} organizasyon bulundu
+                  {viewMode === 'grid' && (
+                    <span className="text-xs ml-2">
+                      (Sayfa {currentPage}/{Math.ceil(totalCount / pageSize)}, Sayfa başına: {pageSize})
+                    </span>
+                  )}
                 </p>
 
                 <div className="flex items-center gap-4">
@@ -305,23 +326,27 @@ const Services = () => {
                     </span>
                     <div className="flex bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg p-1">
                       <button
-                        onClick={() => setViewMode('grid')}
-                        className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                          viewMode === 'grid'
+                        onClick={() => {
+                          setViewMode('grid')
+                          setCurrentPage(1)
+                        }}
+                        className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-colors ${viewMode === 'grid'
                             ? 'bg-primary text-white'
                             : 'text-content-light dark:text-content-dark hover:bg-primary/10'
-                        }`}
+                          }`}
                       >
                         <span className="material-symbols-outlined text-sm">grid_view</span>
                         Liste
                       </button>
                       <button
-                        onClick={() => setViewMode('map')}
-                        className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                          viewMode === 'map'
+                        onClick={() => {
+                          setViewMode('map')
+                          setCurrentPage(1)
+                        }}
+                        className={`flex items-center gap-2 px-3 py-1 rounded-md text-sm font-medium transition-colors ${viewMode === 'map'
                             ? 'bg-primary text-white'
                             : 'text-content-light dark:text-content-dark hover:bg-primary/10'
-                        }`}
+                          }`}
                       >
                         <span className="material-symbols-outlined text-sm">map</span>
                         Harita
@@ -355,10 +380,10 @@ const Services = () => {
               {/* Content Area - Grid veya Map */}
               {viewMode === 'grid' ? (
                 /* Organizations Grid */
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {organizations.map((org) => (
                     <div key={org.id} className="bg-background-light dark:bg-background-dark rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 overflow-hidden flex flex-col">
-                      <div className="w-full h-48 overflow-hidden">
+                      <div className="w-full h-40 overflow-hidden">
                         <img
                           alt={org.title}
                           className="w-full h-full object-cover"
@@ -369,7 +394,7 @@ const Services = () => {
                         />
                       </div>
 
-                      <div className="p-6 flex flex-col flex-grow">
+                      <div className="p-4 flex flex-col flex-grow">
                         <h2 className="text-xl font-bold text-content-light dark:text-content-dark">
                           {org.title || 'Başlık Yok'}
                         </h2>
@@ -421,13 +446,28 @@ const Services = () => {
                 </div>
               ) : (
                 /* Organizations Map */
-                <div className="bg-background-light dark:bg-background-dark rounded-xl shadow-lg border border-border-light dark:border-border-dark p-6">
-                  <OrganizationMap organizations={organizations} />
+                <div className="space-y-6">
+                  {/* Harita Bilgilendirme */}
+                  <div className="bg-primary/10 p-4 rounded-lg border border-primary/20">
+                    <div className="flex items-start gap-3">
+                      <span className="material-symbols-outlined text-primary text-sm mt-0.5">map</span>
+                      <div className="text-sm">
+                        <p className="text-primary font-medium mb-2">Harita Görünümü</p>
+                        <p className="text-content-light dark:text-content-dark">
+                          Tüm organizasyonlar haritada gösteriliyor. Marker'lara tıklayarak detayları görüntüleyebilirsiniz.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-background-light dark:bg-background-dark rounded-xl shadow-lg border border-border-light dark:border-border-dark p-6">
+                    <OrganizationMap organizations={organizations} />
+                  </div>
                 </div>
               )}
 
               {/* Pagination - Sadece grid görünümünde göster */}
-              {viewMode === 'grid' && totalCount > pageSize && (
+              {viewMode === 'grid' && Math.ceil(totalCount / pageSize) > 1 && (
                 <nav aria-label="Pagination" className="mt-16 flex items-center justify-center">
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}

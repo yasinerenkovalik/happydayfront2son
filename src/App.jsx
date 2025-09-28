@@ -13,13 +13,13 @@ import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import CompanyRegister from './pages/CompanyRegister'
 import EmailConfirmation from './pages/EmailConfirmation'
-import AdminLogin from './pages/AdminLogin'
-import AdminDashboard from './pages/AdminDashboard'
+
+
 import Dashboard from './pages/Dashboard'
 import OrganizationDetail from './pages/OrganizationDetail'
 import CompanyDetail from './pages/CompanyDetail'
 import NotFound from './pages/NotFound'
-import AdminProtectedRoute from './components/AdminProtectedRoute'
+
 
 function App() {
   return (
@@ -40,15 +40,7 @@ function App() {
             <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route path="/auth/confirm-email/auth/confirm-email" element={<EmailConfirmation />} />
             <Route path="/company/register" element={<CompanyRegister />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route
-              path="/admin/dashboard"
-              element={
-                <AdminProtectedRoute>
-                  <AdminDashboard />
-                </AdminProtectedRoute>
-              }
-            />
+
             <Route
               path="/dashboard"
               element={

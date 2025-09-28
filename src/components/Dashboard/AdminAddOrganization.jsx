@@ -1,14 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useCategories } from '../../hooks/useFilterData'
-import useCompany from '../../hooks/useCompany'
 import { getApiUrl } from '../../utils/api'
 
-const AddOrganization = () => {
+const AdminAddOrganization = () => {
   const { user, getAuthHeaders } = useAuth()
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [companies, setCompanies] = useState([])
+  const [companiesLoading, setCompaniesLoading] = useState(true)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -17,6 +18,7 @@ const AddOrganization = () => {
     maxGuestCount: '',
     duration: '',
     categoryId: '',
+    companyId: '', // Admin seçecek
     isOutdoor: false,
     coverPhoto: null,
     images: [],
@@ -30,7 +32,42 @@ const AddOrganization = () => {
 
   // API'den verileri çek
   const { categories } = useCategories()
-  const { company } = useCompany()
+
+  // Şirketleri çek
+  useEffect(() => {
+    fetchCompanies()
+  }, [])
+
+  const fetchCompanies = async () => {
+    try {
+      setCompaniesLoading(true)
+      
+      const response = await fetch(getApiUrl('/Company/CompanyGetAll'), {
+        method: 'GET',
+        headers: {
+          'Accept': 'text/plain',
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Şirketler yüklenemedi')
+      }
+
+      const result = await response.json()
+      if (result.isSuccess) {
+        setCompanies(result.data || [])
+      } else {
+        throw new Error(result.message || 'Şirketler yüklenemedi')
+      }
+    } catch (err) {
+      console.error('Şirketler yüklenirken hata:', err)
+      setError('Şirketler yüklenemedi: ' + err.message)
+    } finally {
+      setCompaniesLoading(false)
+    }
+  }
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target
@@ -54,6 +91,10 @@ const AddOrganization = () => {
     setSuccess(false)
 
     try {
+      if (!formData.companyId) {
+        throw new Error('Lütfen bir şirket seçin')
+      }
+
       // FormData oluştur (dosya yükleme için)
       const submitData = new FormData()
       
@@ -65,7 +106,7 @@ const AddOrganization = () => {
       submitData.append('Duration', formData.duration)
       submitData.append('CategoryId', parseInt(formData.categoryId))
       submitData.append('IsOutdoor', formData.isOutdoor)
-      submitData.append('CompanyId', user?.companyId)
+      submitData.append('CompanyId', formData.companyId) // Admin seçtiği şirket
       
       // Opsiyonel alanlar
       // Hizmetleri JSON string olarak gönder
@@ -85,7 +126,7 @@ const AddOrganization = () => {
       
       // Çoklu resimler
       if (formData.images && formData.images.length > 0) {
-        formData.images.forEach((image, index) => {
+        formData.images.forEach((image) => {
           submitData.append('Images', image)
         })
       }
@@ -114,6 +155,7 @@ const AddOrganization = () => {
           maxGuestCount: '',
           duration: '',
           categoryId: '',
+          companyId: '',
           isOutdoor: false,
           coverPhoto: null,
           images: [],
@@ -136,25 +178,90 @@ const AddOrganization = () => {
     }
   }
 
+  const selectedCompany = companies.find(c => c.id === formData.companyId)
+
   return (
     <div className="p-6">
-      <h2 className="text-xl font-bold text-content-light dark:text-content-dark mb-6">
-        Yeni Organizasyon Ekle
-      </h2>
+      <div className="flex items-center gap-3 mb-6">
+        <span className="material-symbols-outlined text-red-600 text-2xl">add_business</span>
+        <h2 className="text-2xl font-bold text-content-light dark:text-content-dark">
+          Organizasyon Ekle (Admin)
+        </h2>
+      </div>
 
       {success && (
         <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded-lg mb-6">
-          Organizasyon başarıyla oluşturuldu!
+          <div className="flex items-center">
+            <span className="material-symbols-outlined mr-2">check_circle</span>
+            Organizasyon başarıyla oluşturuldu!
+          </div>
         </div>
       )}
 
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-6">
-          {error}
+          <div className="flex items-center">
+            <span className="material-symbols-outlined mr-2">error</span>
+            {error}
+          </div>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Şirket Seçimi */}
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="material-symbols-outlined text-red-600">business</span>
+            <h3 className="text-lg font-semibold text-red-800 dark:text-red-200">
+              Şirket Seçimi
+            </h3>
+          </div>
+          
+          {companiesLoading ? (
+            <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+              <span>Şirketler yükleniyor...</span>
+            </div>
+          ) : (
+            <>
+              <select
+                name="companyId"
+                required
+                value={formData.companyId}
+                onChange={handleChange}
+                disabled={loading}
+                className="w-full px-4 py-3 border border-red-300 dark:border-red-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white dark:bg-gray-800 text-content-light dark:text-content-dark disabled:opacity-50"
+              >
+                <option value="">Şirket Seçin</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name} - {company.email}
+                  </option>
+                ))}
+              </select>
+              
+              {selectedCompany && (
+                <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-red-200 dark:border-red-700">
+                  <div className="text-sm">
+                    <p className="font-medium text-red-800 dark:text-red-200">Seçili Şirket:</p>
+                    <p className="text-red-700 dark:text-red-300">
+                      <strong>{selectedCompany.name}</strong>
+                    </p>
+                    <p className="text-red-600 dark:text-red-400">
+                      {selectedCompany.email} • {selectedCompany.phoneNumber || 'Telefon yok'}
+                    </p>
+                    {selectedCompany.adress && (
+                      <p className="text-red-600 dark:text-red-400 text-xs mt-1">
+                        📍 {selectedCompany.adress}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Başlık */}
           <div className="md:col-span-2">
@@ -169,7 +276,7 @@ const AddOrganization = () => {
               value={formData.title}
               onChange={handleChange}
               disabled={loading}
-              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
               placeholder="Organizasyon başlığını girin"
             />
           </div>
@@ -187,7 +294,7 @@ const AddOrganization = () => {
               value={formData.description}
               onChange={handleChange}
               disabled={loading}
-              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
               placeholder="Organizasyon açıklamasını girin"
             />
           </div>
@@ -207,7 +314,7 @@ const AddOrganization = () => {
               value={formData.price}
               onChange={handleChange}
               disabled={loading}
-              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
               placeholder="0.00"
             />
           </div>
@@ -226,7 +333,7 @@ const AddOrganization = () => {
               value={formData.maxGuestCount}
               onChange={handleChange}
               disabled={loading}
-              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
               placeholder="Misafir sayısı"
             />
           </div>
@@ -244,31 +351,9 @@ const AddOrganization = () => {
               value={formData.duration}
               onChange={handleChange}
               disabled={loading}
-              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
               placeholder="Örn: 4 saat, Tüm gün"
             />
-          </div>
-
-          {/* Konum Bilgisi (Company'den otomatik) */}
-          <div className="md:col-span-2">
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="material-symbols-outlined text-blue-600 dark:text-blue-400">location_on</span>
-                <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                  Organizasyon Konumu
-                </h3>
-              </div>
-              <p className="text-blue-700 dark:text-blue-300 text-sm">
-                {company ? (
-                  `${company.cityName || 'Şehir belirtilmemiş'}, ${company.districtName || 'İlçe belirtilmemiş'}`
-                ) : (
-                  'Şirket bilgileri yükleniyor...'
-                )}
-              </p>
-              <p className="text-blue-600 dark:text-blue-400 text-xs mt-1">
-                Konum şirket profilinizden otomatik alınmaktadır. Değiştirmek için şirket profilini güncelleyin.
-              </p>
-            </div>
           </div>
 
           {/* Kategori */}
@@ -283,7 +368,7 @@ const AddOrganization = () => {
               value={formData.categoryId}
               onChange={handleChange}
               disabled={loading}
-              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
             >
               <option value="">Kategori Seçin</option>
               {categories.map((category) => (
@@ -319,7 +404,7 @@ const AddOrganization = () => {
                   }
                 }}
                 disabled={loading}
-                className="flex-1 px-3 py-2 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+                className="flex-1 px-3 py-2 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
                 placeholder="Hizmet adı girin ve Enter'a basın"
               />
               <button
@@ -334,7 +419,7 @@ const AddOrganization = () => {
                   }
                 }}
                 disabled={loading || !newService.trim()}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <span className="material-symbols-outlined text-sm">add</span>
               </button>
@@ -350,7 +435,7 @@ const AddOrganization = () => {
                   {formData.services.map((service, index) => (
                     <div
                       key={index}
-                      className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm"
+                      className="flex items-center gap-2 bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200 px-3 py-1 rounded-full text-sm"
                     >
                       <span>{service}</span>
                       <button
@@ -362,7 +447,7 @@ const AddOrganization = () => {
                           }))
                         }}
                         disabled={loading}
-                        className="hover:bg-primary/20 rounded-full p-1 transition-colors disabled:opacity-50"
+                        className="hover:bg-red-200 dark:hover:bg-red-800/30 rounded-full p-1 transition-colors disabled:opacity-50"
                       >
                         <span className="material-symbols-outlined text-xs">close</span>
                       </button>
@@ -389,7 +474,7 @@ const AddOrganization = () => {
               value={formData.cancelPolicy}
               onChange={handleChange}
               disabled={loading}
-              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
               placeholder="İptal koşullarınızı belirtin (opsiyonel)"
             />
           </div>
@@ -406,7 +491,7 @@ const AddOrganization = () => {
               value={formData.reservationNote}
               onChange={handleChange}
               disabled={loading}
-              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
               placeholder="Rezervasyon ile ilgili özel notlar (opsiyonel)"
             />
           </div>
@@ -423,7 +508,7 @@ const AddOrganization = () => {
               value={formData.videoUrl}
               onChange={handleChange}
               disabled={loading}
-              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
               placeholder="https://www.youtube.com/watch?v=... (opsiyonel)"
             />
           </div>
@@ -440,7 +525,7 @@ const AddOrganization = () => {
               accept="image/*"
               onChange={handleChange}
               disabled={loading}
-              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
             />
           </div>
 
@@ -457,7 +542,7 @@ const AddOrganization = () => {
               multiple
               onChange={handleChange}
               disabled={loading}
-              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
+              className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-background-light dark:bg-background-dark text-content-light dark:text-content-dark disabled:opacity-50"
             />
             <p className="text-xs text-subtle-light dark:text-subtle-dark mt-1">
               Birden fazla resim seçebilirsiniz
@@ -473,7 +558,7 @@ const AddOrganization = () => {
               checked={formData.isOutdoor}
               onChange={handleChange}
               disabled={loading}
-              className="h-4 w-4 text-primary focus:ring-primary border-border-light dark:border-border-dark rounded disabled:opacity-50"
+              className="h-4 w-4 text-red-600 focus:ring-red-500 border-border-light dark:border-border-dark rounded disabled:opacity-50"
             />
             <label htmlFor="isOutdoor" className="ml-2 block text-sm text-content-light dark:text-content-dark">
               Açık alan organizasyonu
@@ -485,8 +570,8 @@ const AddOrganization = () => {
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={loading}
-            className="px-6 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            disabled={loading || !formData.companyId}
+            className="px-6 py-3 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {loading ? (
               <>
@@ -495,7 +580,7 @@ const AddOrganization = () => {
               </>
             ) : (
               <>
-                <span className="material-symbols-outlined">add</span>
+                <span className="material-symbols-outlined">add_business</span>
                 Organizasyon Oluştur
               </>
             )}
@@ -506,4 +591,4 @@ const AddOrganization = () => {
   )
 }
 
-export default AddOrganization
+export default AdminAddOrganization

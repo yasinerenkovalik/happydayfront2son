@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getApiUrl } from '../utils/api'
 
-const useOrganizations = (pageNumber = 1, pageSize = 10, filters = {}) => {
+const useOrganizations = (pageNumber = 1, pageSize = 1000, filters = {}) => {
     const [organizations, setOrganizations] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
