@@ -10,7 +10,7 @@ const HeroSection = () => {
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32 lg:py-40 text-center">
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-content-light drop-shadow-lg">
-          Hayallerinizdeki Organizasyonu Gerçekleştirin
+          Hayallerinizdeki Organizasyonu Gerçekleştirin github
         </h1>
         <p className="mt-4 max-w-2xl mx-auto text-base sm:text-lg text-content-light/80 drop-shadow-md">
           MutluGünüm ile unutulmaz anlar yaratın. Profesyonel organizasyon hizmetlerimizle 
