@@ -1,28 +1,10 @@
-FROM node:20-alpine AS build
-
+FROM node:18 AS build
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
-
-# Install dependencies
-RUN npm ci
-
-# Copy source code
+RUN npm install
 COPY . .
-
-# Build the application
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine AS production
-
-# Copy built assets from build stage
+FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
-
-# Copy custom nginx configuration (optional)
-COPY nginx.conf /etc/nginx/nginx.conf
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+COPY nginx.conf /etc/nginx/conf.d/default.conf
