@@ -36,7 +36,7 @@ const Contact = () => {
       formDataToSend.append('Mesaage', `Konu: ${formData.subject}\n\n${formData.message}`) // API'deki yazım hatası korundu
 
       // API'ye gönder
-      const response = await fetch('http://193.111.77.142/api/Concat/add', {
+      const response = await fetch(getApiUrl('/Concat/add'), {
         method: 'POST',
         headers: {
           'accept': 'text/plain'
