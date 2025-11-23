@@ -1,5 +1,5 @@
-// API base URL - environment variable'dan al, yoksa fallback kullan
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://193.111.77.142'
+// API base URL - environment variable'dan al, yoksa development fallback kullan
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.mutlugunum.com.tr'
 
 export const getApiUrl = (endpoint) => {
   // Her zaman API_BASE_URL kullan (Coolify için)
