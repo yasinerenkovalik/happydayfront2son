@@ -1,20 +1,27 @@
-FROM node:20-alpine AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
+server {
+    listen 80;
+    server_name _;
 
-FROM nginx:alpine
+    # STATIC FILES
+    root /usr/share/nginx/html;
+    index index.html;
 
-# Copy built files
-COPY --from=build /app/dist /usr/share/nginx/html
+    # En kritik satır → MIME tipi yüklenmesi
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
 
-# Copy nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
 
-# Verify nginx config is valid
-RUN nginx -t
+    location ~* \.(js|mjs)$ {
+        types { }
+        default_type application/javascript;
+        try_files $uri =404;
+    }
 
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+    location ~* \.(css)$ {
+        default_type text/css;
+        try_files $uri =404;
+    }
+}
