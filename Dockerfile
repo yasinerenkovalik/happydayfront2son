@@ -1,27 +1,17 @@
-server {
-    listen 80;
-    server_name _;
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
 
-    # STATIC FILES
-    root /usr/share/nginx/html;
-    index index.html;
+FROM nginx:alpine
 
-    # En kritik satır → MIME tipi yüklenmesi
-    include /etc/nginx/mime.types;
-    default_type application/octet-stream;
+COPY --from=build /app/dist /usr/share/nginx/html
 
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-    location ~* \.(js|mjs)$ {
-        types { }
-        default_type application/javascript;
-        try_files $uri =404;
-    }
+RUN nginx -t
 
-    location ~* \.(css)$ {
-        default_type text/css;
-        try_files $uri =404;
-    }
-}
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
