@@ -53,9 +53,10 @@ location ~* \.m?js$ {
 - ✅ Gzip compression optimize edildi
 
 ### 2. `Dockerfile` İyileştirmeleri
-- ✅ `npm ci --only=production` kullanımı (daha hızlı ve güvenilir)
+- ✅ `npm ci` kullanımı (tüm dependencies yüklenir, build için gerekli)
 - ✅ Default nginx config önce siliniyor, sonra bizimki kopyalanıyor
 - ✅ Nginx config testi daha verbose (`nginx -t -c /etc/nginx/nginx.conf`)
+- ✅ Multi-stage build ile sadece dist klasörü production image'a kopyalanıyor
 
 ### 3. Deployment Dokümanı
 - ✅ `COOLIFY-DEPLOYMENT.md` güncellendi

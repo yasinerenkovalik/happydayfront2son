@@ -35,10 +35,12 @@ Bu proje artık doğru şekilde yapılandırılmış:
 
 **İyileştirmeler:**
 - ✅ Multi-stage build (küçük image boyutu)
-- ✅ `npm ci --only=production` kullanımı (daha hızlı ve güvenilir)
+- ✅ `npm ci` kullanımı (tüm dependencies yüklenir, build için gerekli)
 - ✅ Default nginx config önce siliniyor, sonra bizimki kopyalanıyor
 - ✅ Nginx config testi daha verbose (`nginx -t -c /etc/nginx/nginx.conf`)
 - ✅ Port 80 expose ediliyor
+
+**Not:** `npm ci --only=production` kullanmıyoruz çünkü Vite gibi build araçları dev dependencies içinde. Build tamamlandıktan sonra zaten sadece dist klasörü production image'a kopyalanıyor.
 
 ### 3. Build Optimizasyonları
 - ✅ Vite production build optimize edildi
