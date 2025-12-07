@@ -14,15 +14,30 @@ Bu, nginx'in JavaScript dosyalarını yanlış Content-Type ile sunduğu anlamı
 Bu proje artık doğru şekilde yapılandırılmış:
 
 ### 1. Nginx Konfigürasyonu (`nginx.conf`)
-- ✅ `/etc/nginx/mime.types` dahil edildi (tüm MIME type'ları içerir)
+
+**ÖNEMLİ DEĞİŞİKLİKLER:**
+- ✅ `add_header Content-Type` kullanımı KALDIRILDI (bu yanlış bir yaklaşımdı)
+- ✅ Her dosya tipi için `types {}` bloğu ile doğru MIME type tanımlandı
+- ✅ `/etc/nginx/mime.types` dahil edildi (çakışma olmadan)
 - ✅ UTF-8 charset ayarlandı
 - ✅ Gzip compression aktif
-- ✅ Static asset cache ayarları
+- ✅ Security headers eklendi (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection)
+- ✅ Static asset cache ayarları optimize edildi
 - ✅ SPA routing desteği
+- ✅ Font dosyaları için CORS desteği
+
+**Neden Önceki Yapılandırma Çalışmıyordu?**
+- `add_header Content-Type` kullanmak Nginx'te yanlış bir yaklaşımdır
+- Content-Type header'ı `types {}` direktifi ile ayarlanmalıdır
+- `types { }` (boş) kullanıp sonra `default_type` ayarlamak çakışmalara neden olur
 
 ### 2. Dockerfile
+
+**İyileştirmeler:**
 - ✅ Multi-stage build (küçük image boyutu)
-- ✅ Nginx config doğru yere kopyalanıyor
+- ✅ `npm ci --only=production` kullanımı (daha hızlı ve güvenilir)
+- ✅ Default nginx config önce siliniyor, sonra bizimki kopyalanıyor
+- ✅ Nginx config testi daha verbose (`nginx -t -c /etc/nginx/nginx.conf`)
 - ✅ Port 80 expose ediliyor
 
 ### 3. Build Optimizasyonları
@@ -32,10 +47,11 @@ Bu proje artık doğru şekilde yapılandırılmış:
 
 ## Coolify'da Deployment
 
-### Adım 1: Projeyi Git'e Push Edin
+### Adım 1: Değişiklikleri Git'e Push Edin
+
 ```bash
 git add .
-git commit -m "Fix MIME type issue for production deployment"
+git commit -m "Fix MIME type issue - remove add_header Content-Type usage"
 git push
 ```
 
@@ -55,6 +71,12 @@ Coolify otomatik olarak:
 2. Nginx container'ı başlatacak
 3. Port 80'i expose edecek
 
+### Adım 4: Cache Temizleme
+
+Deploy sonrası **MUTLAKA** yapın:
+1. **Browser cache temizle**: Cmd+Shift+R (Mac) veya Ctrl+Shift+R (Windows)
+2. **Hard refresh**: Tarayıcıda birkaç kez yenile
+
 ## Test Etme
 
 Deploy sonrası kontrol edin:
@@ -63,12 +85,14 @@ Deploy sonrası kontrol edin:
 2. **Network Tab**: 
    - JS dosyaları `application/javascript` olarak mı sunuluyor?
    - CSS dosyaları `text/css` olarak mı sunuluyor?
-3. **Response Headers**:
+3. **Response Headers** (bir .js dosyasına tıklayın):
    ```
-   Content-Type: application/javascript; charset=utf-8
+   Content-Type: application/javascript
+   X-Content-Type-Options: nosniff
+   Cache-Control: public, max-age=31536000, immutable
    ```
 
-## Manuel Test
+## Manuel Test (Local Docker)
 
 Eğer local'de test etmek isterseniz:
 
@@ -89,12 +113,24 @@ open http://localhost:8080
 
 1. **Nginx loglarını kontrol edin**:
    ```bash
+   # Coolify'da container loglarını görüntüleyin
+   # veya SSH ile sunucuya bağlanıp:
    docker logs <container-id>
    ```
 
 2. **Nginx config'i kontrol edin**:
    ```bash
    docker exec <container-id> cat /etc/nginx/conf.d/default.conf
+   ```
+   
+   Çıktıda şunları görmeli siniz:
+   ```nginx
+   location ~* \.m?js$ {
+       types {
+           application/javascript js mjs;
+       }
+       ...
+   }
    ```
 
 3. **MIME types dosyasını kontrol edin**:
@@ -106,11 +142,24 @@ open http://localhost:8080
    application/javascript  js;
    ```
 
+4. **Bir JS dosyasının header'larını kontrol edin**:
+   ```bash
+   docker exec <container-id> sh -c "cd /usr/share/nginx/html && find . -name '*.js' | head -1"
+   ```
+
 ### Cache Sorunu
 
 Eğer eski dosyalar yükleniyorsa:
 - Browser cache'i temizleyin (Cmd+Shift+R veya Ctrl+Shift+R)
 - Coolify'da rebuild yapın
+- Incognito/Private mode'da test edin
+
+### Build Hatası
+
+Eğer build sırasında hata alırsanız:
+1. `package-lock.json` dosyasını kontrol edin
+2. Node version'ı kontrol edin (20-alpine kullanılıyor)
+3. Coolify build loglarını inceleyin
 
 ## Notlar
 
@@ -118,3 +167,12 @@ Eğer eski dosyalar yükleniyorsa:
 - ✅ Multi-stage build ile sadece gerekli dosyalar production'a gidiyor
 - ✅ Gzip compression ile transfer boyutu küçültülüyor
 - ✅ Static asset'ler 1 yıl cache'leniyor
+- ✅ Security headers eklendi
+- ✅ Font dosyaları için CORS aktif
+
+## Önemli Hatırlatmalar
+
+1. **ASLA `add_header Content-Type` kullanmayın** - Bu Nginx'te yanlış bir yaklaşımdır
+2. **Her zaman `types {}` bloğu kullanın** - Bu doğru MIME type ayarlama yöntemidir
+3. **Deploy sonrası cache temizleyin** - Eski dosyalar sorun yaratabilir
+4. **Network tab'ı kontrol edin** - Content-Type header'larını doğrulayın
